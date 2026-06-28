@@ -1,5 +1,6 @@
 import type { Classification } from "../api/types";
 import { useI18n } from "../i18n/I18nProvider";
+import { scoreBarWidth } from "../lib/scoreBar";
 import { HelpTooltip } from "./HelpTooltip";
 
 type ScoreKey =
@@ -55,7 +56,7 @@ function Row({
   value: number;
   negative?: boolean;
 }) {
-  const width = Math.max(0, Math.min(100, Math.round(value)));
+  const width = scoreBarWidth(value);
   return (
     <div className="score-row">
       <span className="score-row-label">
