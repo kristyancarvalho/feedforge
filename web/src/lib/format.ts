@@ -1,10 +1,10 @@
-export const formatDate = (value: string | null): string => {
+export const formatDate = (value: string | null, fallback = "—"): string => {
   if (!value) {
-    return "unknown";
+    return fallback;
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return "unknown";
+    return fallback;
   }
   return date.toLocaleString(undefined, {
     year: "numeric",
@@ -12,6 +12,21 @@ export const formatDate = (value: string | null): string => {
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit"
+  });
+};
+
+export const formatDay = (value: string | null, fallback = "—"): string => {
+  if (!value) {
+    return fallback;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return fallback;
+  }
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "2-digit"
   });
 };
 

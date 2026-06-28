@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { api } from "../api/client";
 import { messageFromError, useAsync } from "../hooks/useAsync";
-import { LanguageBadge } from "../components/badges";
+import { useI18n } from "../i18n/I18nProvider";
+import { LanguageBadge, SourceHealthBadge } from "../components/badges";
 import { EmptyState, ErrorView, Loading } from "../components/StateViews";
+import { HelpTooltip } from "../components/HelpTooltip";
+import { ExternalLinkIcon, ReloadIcon } from "../components/icons";
+import { sourceHealthLevel } from "../lib/sourceHealth";
 import { formatDate } from "../lib/format";
 
-export const SourcesPage = () => {
+export function SourcesPage() {
+  const { t } = useI18n();
   const state = useAsync(() => api.listSources(), []);
   const [reloading, setReloading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -17,9 +22,8 @@ export const SourcesPage = () => {
     setError(null);
     try {
       const result = await api.reloadSources();
-      setMessage(
-        `Synced ${result.total} sources (${result.created} created, ${result.updated} updated).`
-      );
+      const synced = result.data;
+      setMessage(`${synced.total} · +${synced.created} · ~${synced.updated}`);
       state.reload();
     } catch (cause) {
       setError(messageFromError(cause));
@@ -29,91 +33,98 @@ export const SourcesPage = () => {
   };
 
   return (
-    <div className="page">
-      <header className="page__header">
-        <div>
-          <h1>Sources</h1>
-          <p className="page__subtitle">Source health and ingestion status.</p>
+    <div className="section-stack">
+      <header className="page-header">
+        <div className="page-title-row">
+          <div>
+            <h1 className="page-title">{t("sources.title")}</h1>
+            <p className="page-subtitle">{t("sources.subtitle")}</p>
+          </div>
+          <div className="page-header-actions">
+            {message ? <span className="dim">{message}</span> : null}
+            <button type="button" className="button button-primary" disabled={reloading} onClick={reload}>
+              <ReloadIcon className="inline-icon" />
+              {reloading ? t("actions.running") : t("actions.reloadSources")}
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          className="btn btn--primary"
-          disabled={reloading}
-          onClick={reload}
-        >
-          {reloading ? "Reloading…" : "Reload sources"}
-        </button>
       </header>
 
-      {message ? <div className="notice notice--ok">{message}</div> : null}
       {error ? <ErrorView message={error} /> : null}
 
-      {state.loading ? <Loading label="Loading sources" /> : null}
+      {state.loading ? <Loading /> : null}
       {state.error ? <ErrorView message={state.error} onRetry={state.reload} /> : null}
 
       {state.data && !state.loading && !state.error ? (
         state.data.data.length === 0 ? (
-          <EmptyState message="No sources found. Check sources.json and reload sources." />
+          <EmptyState message={t("sources.empty")} />
         ) : (
-          <div className="source-list">
-            {state.data.data.map((source) => (
-              <article
-                key={source.id}
-                className={`source-card ${source.enabled ? "" : "source-card--disabled"}`}
-              >
-                <div className="source-card__head">
-                  <div>
-                    <strong>{source.name}</strong>
-                    <div className="source-card__meta">
-                      <span className="badge badge--type">{source.type}</span>
+          <div className="table-wrap">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>{t("common.source")}</th>
+                  <th>{t("sources.type")}</th>
+                  <th>{t("sources.language")}</th>
+                  <th>
+                    {t("sources.weight")}
+                    <HelpTooltip label={t("sources.weight")} text={t("sources.help.weight")} />
+                  </th>
+                  <th>
+                    {t("sources.enabled")}
+                    <HelpTooltip label={t("sources.enabled")} text={t("sources.help.enabled")} />
+                  </th>
+                  <th>
+                    {t("sources.health")}
+                    <HelpTooltip label={t("sources.health")} text={t("sources.help.health")} />
+                  </th>
+                  <th>{t("sources.itemsCollected")}</th>
+                  <th>{t("sources.lastRun")}</th>
+                  <th>{t("sources.lastSuccess")}</th>
+                  <th>
+                    {t("sources.lastError")}
+                    <HelpTooltip label={t("sources.lastError")} text={t("sources.help.lastError")} />
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {state.data.data.map((source) => (
+                  <tr key={source.id}>
+                    <td className="source-name-cell">
+                      <a href={source.url} target="_blank" rel="noreferrer">
+                        {source.name}
+                        <ExternalLinkIcon className="inline-icon" />
+                      </a>
+                      {source.tags.length > 0 ? (
+                        <div className="tag-list">
+                          {source.tags.map((tag) => (
+                            <span key={tag} className="chip">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td>{source.type}</td>
+                    <td>
                       <LanguageBadge language={source.language} />
-                      <span className="badge badge--weight">w{source.weight}</span>
-                      <span
-                        className={`badge ${
-                          source.enabled ? "badge--enabled" : "badge--disabled"
-                        }`}
-                      >
-                        {source.enabled ? "enabled" : "disabled"}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="source-card__count">
-                    {source.itemsCollected} items
-                  </span>
-                </div>
-
-                <a
-                  className="source-card__url"
-                  href={source.url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {source.url}
-                </a>
-
-                {source.tags.length > 0 ? (
-                  <div className="tags">
-                    {source.tags.map((tag) => (
-                      <span key={tag} className="tag">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="source-card__status">
-                  <span>Last run: {formatDate(source.lastRunAt)}</span>
-                  <span>Last success: {formatDate(source.lastSuccessAt)}</span>
-                </div>
-
-                {source.lastError ? (
-                  <p className="source-card__error">{source.lastError}</p>
-                ) : null}
-              </article>
-            ))}
+                    </td>
+                    <td>{source.weight}</td>
+                    <td>{source.enabled ? t("sources.enabled") : t("sources.disabled")}</td>
+                    <td>
+                      <SourceHealthBadge level={sourceHealthLevel(source)} />
+                    </td>
+                    <td>{source.itemsCollected}</td>
+                    <td>{formatDate(source.lastRunAt, t("sources.never"))}</td>
+                    <td>{formatDate(source.lastSuccessAt, t("sources.never"))}</td>
+                    <td>{source.lastError ? source.lastError : <span className="dim">{t("sources.noError")}</span>}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )
       ) : null}
     </div>
   );
-};
+}

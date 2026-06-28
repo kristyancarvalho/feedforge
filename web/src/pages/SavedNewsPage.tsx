@@ -1,166 +1,113 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { api } from "../api/client";
-import { SAVED_STATUSES, type NewsFilters, type NewsItem } from "../api/types";
-import { useAsync } from "../hooks/useAsync";
+import { useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import type { FilterField } from "../components/FilterBar";
+import { FilterBar } from "../components/FilterBar";
 import { EditorialControls } from "../components/EditorialControls";
-import { LanguageBadge, ScoreBadge } from "../components/badges";
-import { Pagination } from "../components/Pagination";
+import { LanguageBadge, MatchStrengthBadge, SavedStatusBadge, ScoreBadge } from "../components/badges";
 import { EmptyState, ErrorView, Loading } from "../components/StateViews";
+import { DateIcon, SourceIcon } from "../components/icons";
+import { useInfiniteNews } from "../hooks/useInfiniteNews";
+import { paramsToNewsFilters } from "../lib/newsQuery";
+import { useI18n } from "../i18n/I18nProvider";
 import { formatDate } from "../lib/format";
 
-interface SavedFilterState {
-  status: string;
-  source: string;
-  topic: string;
-  language: string;
-  minScore: string;
-}
+const SAVED_FIELDS: FilterField[] = [
+  "savedStatus",
+  "source",
+  "topic",
+  "language",
+  "matchStrength",
+  "minScore",
+  "sort"
+];
 
-const EMPTY: SavedFilterState = {
-  status: "",
-  source: "",
-  topic: "",
-  language: "",
-  minScore: ""
-};
+export function SavedNewsPage() {
+  const { t } = useI18n();
+  const [searchParams] = useSearchParams();
 
-export const SavedNewsPage = () => {
-  const [form, setForm] = useState<SavedFilterState>(EMPTY);
-  const [applied, setApplied] = useState<SavedFilterState>(EMPTY);
-  const [page, setPage] = useState(1);
-
-  const filters = useMemo<NewsFilters>(
-    () => ({
-      saved: "true",
-      status: applied.status || undefined,
-      source: applied.source || undefined,
-      topic: applied.topic || undefined,
-      language: applied.language || undefined,
-      minScore: applied.minScore || undefined,
-      page,
-      limit: 20
-    }),
-    [applied, page]
+  const filters = useMemo(
+    () => ({ ...paramsToNewsFilters(searchParams), saved: "true" }),
+    [searchParams]
   );
 
-  const state = useAsync(() => api.listNews(filters), [filters]);
-
-  const onChange = (next: NewsItem) => {
-    if (next.saved === null) {
-      state.reload();
-      return;
-    }
-    if (state.data) {
-      state.data.data = state.data.data.map((item) =>
-        item.id === next.id ? next : item
-      );
-    }
-  };
-
-  const apply = () => {
-    setPage(1);
-    setApplied(form);
-  };
+  const news = useInfiniteNews(filters);
 
   return (
-    <div className="page">
-      <header className="page__header">
-        <div>
-          <h1>Saved News</h1>
-          <p className="page__subtitle">Editorial workflow for promising signals.</p>
+    <div className="section-stack">
+      <header className="page-header">
+        <div className="page-title-row">
+          <div>
+            <h1 className="page-title">{t("saved.title")}</h1>
+            <p className="page-subtitle">{t("saved.subtitle")}</p>
+          </div>
         </div>
       </header>
 
-      <section className="filters">
-        <select
-          className="input"
-          value={form.status}
-          onChange={(event) => setForm({ ...form, status: event.target.value })}
-        >
-          <option value="">All statuses</option>
-          {SAVED_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {status}
-            </option>
-          ))}
-        </select>
-        <input
-          className="input"
-          placeholder="Source id"
-          value={form.source}
-          onChange={(event) => setForm({ ...form, source: event.target.value })}
-        />
-        <input
-          className="input"
-          placeholder="Topic"
-          value={form.topic}
-          onChange={(event) => setForm({ ...form, topic: event.target.value })}
-        />
-        <select
-          className="input"
-          value={form.language}
-          onChange={(event) => setForm({ ...form, language: event.target.value })}
-        >
-          <option value="">All languages</option>
-          <option value="pt-BR">pt-BR</option>
-          <option value="en">en</option>
-        </select>
-        <input
-          className="input"
-          type="number"
-          min={0}
-          max={100}
-          placeholder="Min score"
-          value={form.minScore}
-          onChange={(event) => setForm({ ...form, minScore: event.target.value })}
-        />
-        <div className="filters__actions">
-          <button type="button" className="btn btn--accent" onClick={apply}>
-            Apply
-          </button>
-        </div>
-      </section>
+      <FilterBar fields={SAVED_FIELDS} locked={{ saved: "true" }} />
 
-      {state.loading ? <Loading label="Loading saved news" /> : null}
-      {state.error ? <ErrorView message={state.error} onRetry={state.reload} /> : null}
-
-      {state.data && !state.loading && !state.error ? (
-        state.data.data.length === 0 ? (
-          <EmptyState message="No saved news yet. Save promising items from the Radar page." />
-        ) : (
-          <>
-            <div className="saved-list">
-              {state.data.data.map((item) => (
-                <article key={item.id} className="saved-card">
-                  <div className="saved-card__top">
-                    <ScoreBadge score={item.classification?.finalScore ?? null} />
-                    <div className="saved-card__headline">
-                      <Link to={`/news/${item.id}`} className="card__title">
-                        {item.title}
-                      </Link>
-                      <div className="card__meta">
-                        <span className="card__source">{item.source.name}</span>
-                        <LanguageBadge language={item.language} />
-                        <span>Published {formatDate(item.publishedAt)}</span>
-                        {item.saved ? (
-                          <span>Saved {formatDate(item.saved.createdAt)}</span>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-                  <EditorialControls item={item} onChange={onChange} />
-                </article>
-              ))}
-            </div>
-            <Pagination
-              page={state.data.page}
-              totalPages={state.data.totalPages}
-              onChange={setPage}
-            />
-          </>
-        )
-      ) : null}
+      {news.loading ? (
+        <Loading />
+      ) : news.error && news.items.length === 0 ? (
+        <ErrorView message={news.error} onRetry={news.retry} />
+      ) : news.items.length === 0 ? (
+        <EmptyState message={t("saved.empty")} />
+      ) : (
+        <>
+          <div className="news-grid">
+            {news.items.map((item) => (
+              <article key={item.id} className="news-card card-reveal">
+                <div className="news-card-top">
+                  <ScoreBadge score={item.classification?.finalScore ?? null} />
+                  {item.classification ? (
+                    <MatchStrengthBadge strength={item.classification.matchStrength} />
+                  ) : null}
+                  {item.saved ? <SavedStatusBadge status={item.saved.status} /> : null}
+                </div>
+                <h3 className="news-card-title">
+                  <Link to={`/news/${item.id}`}>{item.title}</Link>
+                </h3>
+                <div className="news-card-meta">
+                  <span className="meta-item">
+                    <SourceIcon className="inline-icon" />
+                    {item.source.name}
+                  </span>
+                  <LanguageBadge language={item.language} />
+                  <span className="meta-item">
+                    <DateIcon className="inline-icon" />
+                    {formatDate(item.publishedAt, t("common.none"))}
+                  </span>
+                  {item.saved ? (
+                    <span className="meta-item dim">
+                      {t("saved.savedOn")} {formatDate(item.saved.createdAt, t("common.none"))}
+                    </span>
+                  ) : null}
+                </div>
+                {item.summary ? <p className="news-card-summary">{item.summary}</p> : null}
+                <EditorialControls
+                  item={item}
+                  onChange={(next) => {
+                    if (next.saved) {
+                      news.updateItem(next);
+                    } else {
+                      news.removeItem(next.id);
+                    }
+                  }}
+                />
+              </article>
+            ))}
+          </div>
+          <div ref={news.sentinelRef} className="sentinel" />
+          <div className="infinite-footer">
+            {news.loadingMore ? (
+              <Loading />
+            ) : news.error ? (
+              <ErrorView message={t("common.loadMoreError")} onRetry={news.retry} />
+            ) : !news.hasMore ? (
+              <span className="dim">{t("common.endOfResults")}</span>
+            ) : null}
+          </div>
+        </>
+      )}
     </div>
   );
-};
+}
