@@ -16,6 +16,9 @@ model Source {
   tags          String[]
   weight        Float
   enabled       Boolean    @default(true)
+  lastStatus    String     @default("unknown")
+  successCount  Int        @default(0)
+  failureCount  Int        @default(0)
   lastRunAt     DateTime?
   lastSuccessAt DateTime?
   lastError     String?
@@ -41,6 +44,7 @@ model NewsItem {
   dateInferred   Boolean         @default(false)
   fingerprint    String
   rawPayload     Json?
+  lastSeenRunId  String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   source         Source          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
@@ -51,26 +55,33 @@ model NewsItem {
   @@index([publishedAt])
   @@index([sourceId])
   @@index([normalizedUrl])
+  @@index([lastSeenRunId])
 }
 
 model Classification {
-  id              String   @id @default(cuid())
-  newsItemId      String   @unique
-  finalScore      Float
-  topicScore      Float
-  keywordScore    Float
-  sourceScore     Float
-  freshnessScore  Float
-  noveltyScore    Float
-  negativePenalty Float
-  detectedTopics  String[]
-  matchedKeywords String[]
-  reasons         String[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  newsItem        NewsItem @relation(fields: [newsItemId], references: [id], onDelete: Cascade)
+  id                       String   @id @default(cuid())
+  newsItemId               String   @unique
+  finalScore               Float
+  topicScore               Float
+  keywordScore             Float
+  technicalDepthScore      Float    @default(0)
+  openSourceRelevanceScore Float    @default(0)
+  sourceScore              Float
+  freshnessScore           Float
+  noveltyScore             Float
+  negativePenalty          Float
+  matchStrength            String   @default("low")
+  detectedTopics           String[]
+  matchedKeywords          String[]
+  reasons                  String[]
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+  newsItem                 NewsItem @relation(fields: [newsItemId], references: [id], onDelete: Cascade)
 
   @@index([finalScore])
+  @@index([technicalDepthScore])
+  @@index([openSourceRelevanceScore])
+  @@index([negativePenalty])
 }
 
 model SavedNews {
