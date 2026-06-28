@@ -4,7 +4,8 @@
   --radius-2: 4px;
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  --maxw: 1320px;
+  --maxw: 1440px;
+  --shell-pad-x: clamp(20px, 4vw, 40px);
 }
 
 :root,
@@ -128,7 +129,7 @@ h4 {
 .header-inner {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 0 20px;
+  padding: 0 var(--shell-pad-x);
   height: 60px;
   display: flex;
   align-items: center;
@@ -245,7 +246,7 @@ h4 {
   width: 100%;
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 24px 20px 64px;
+  padding: 24px var(--shell-pad-x) 64px;
 }
 
 .page-header {
@@ -500,8 +501,8 @@ h4 {
 
 .radar-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 24px;
   align-items: start;
 }
 
@@ -650,7 +651,7 @@ textarea.input {
 }
 
 .radar-main .news-grid {
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
 }
 
 .news-card {
@@ -822,12 +823,19 @@ textarea.input {
 .news-card-actions {
   margin-top: auto;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding-top: 4px;
 }
 
+.news-card-actions .button {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
 .news-card-actions .spacer {
+  flex: 1 1 auto;
   margin-left: auto;
 }
 
