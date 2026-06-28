@@ -14,6 +14,17 @@ It is not a generic RSS reader, an AI writing assistant, or a social media trend
 
 Following open source news across dozens of feeds is noisy. FeedForge filters that noise against an explicit editorial profile so the signal you care about — Linux, security, developer tools, infrastructure, self-hosting, programming languages — rises to the top, with a clear explanation of why each item ranked where it did.
 
+## What's New in 1.1.1
+
+- Radar now uses a two-column layout with the filters in a sticky side panel, giving the news grid more horizontal room. The panel collapses above the grid on small screens.
+- The filter search field is the primary control, with a clearer label, a search icon, and a stronger orange focus ring.
+- Translated contextual help indicators were added to the filter controls.
+- The "Open original" action uses a compact `Original` label with a full accessible name and no longer wraps onto two lines.
+- Icons inside the orange primary buttons now use a high-contrast color.
+- The header status tooltip opens downward so it is no longer clipped by the top bar.
+- The score breakdown renders filled progress bars proportional to each score, with the negative penalty shown in a distinct danger color.
+- Source reliability fixes: Viva o Linux now points to its working `https://www.vivaolinux.com.br/index.rdf` feed, and 9to5Linux is disabled by default because its server-side feed is blocked by a Cloudflare anti-bot challenge that cannot be fetched without browser automation (out of scope). Re-enable it in `sources.json` if you have a working access path.
+
 ## What's New in 1.1.0
 
 - Refreshed orange/black visual identity with a dedicated FeedForge logo.
