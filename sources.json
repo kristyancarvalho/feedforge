@@ -247,7 +247,7 @@
       "language": "en",
       "tags": ["linux", "open source", "desktop linux"],
       "weight": 1.0,
-      "enabled": true
+      "enabled": false
     },
     {
       "id": "omg-ubuntu",
@@ -293,7 +293,7 @@
       "id": "vivaolinux",
       "name": "Viva o Linux",
       "type": "rss",
-      "url": "https://www.vivaolinux.com.br/index.rss",
+      "url": "https://www.vivaolinux.com.br/index.rdf",
       "language": "pt-BR",
       "tags": ["linux", "software livre", "open source", "cli"],
       "weight": 1.0,
