@@ -1,0 +1,149 @@
+{
+  "editorialProfile": {
+    "name": "FeedForge Open Source Radar",
+    "language": ["pt-BR", "en"],
+    "topics": [
+      "open source",
+      "software livre",
+      "linux",
+      "arch linux",
+      "aur",
+      "kernel",
+      "security",
+      "seguranca",
+      "supply chain",
+      "developer tools",
+      "ferramentas de desenvolvimento",
+      "github",
+      "git",
+      "docker",
+      "containers",
+      "kubernetes",
+      "typescript",
+      "javascript",
+      "node.js",
+      "go",
+      "rust",
+      "self-hosting",
+      "homelab",
+      "privacy",
+      "privacidade",
+      "cli",
+      "terminal",
+      "wayland",
+      "hyprland",
+      "desktop linux",
+      "infraestrutura",
+      "devops"
+    ],
+    "negativeTopics": [
+      "celebrity",
+      "sports",
+      "crypto price speculation",
+      "generic startup funding",
+      "generic business news",
+      "ai hype without open source relevance",
+      "press release without technical content"
+    ]
+  },
+  "sources": [
+    {
+      "id": "github-blog",
+      "name": "GitHub Blog",
+      "type": "rss",
+      "url": "https://github.blog/feed/",
+      "language": "en",
+      "tags": ["github", "developer tools", "open source"],
+      "weight": 1.1,
+      "enabled": true
+    },
+    {
+      "id": "cncf-blog",
+      "name": "CNCF Blog",
+      "type": "rss",
+      "url": "https://www.cncf.io/feed/",
+      "language": "en",
+      "tags": ["cloud native", "open source", "infrastructure", "kubernetes"],
+      "weight": 1.0,
+      "enabled": true
+    },
+    {
+      "id": "its-foss",
+      "name": "It's FOSS",
+      "type": "rss",
+      "url": "https://itsfoss.com/feed/",
+      "language": "en",
+      "tags": ["linux", "open source", "desktop linux"],
+      "weight": 1.1,
+      "enabled": true
+    },
+    {
+      "id": "lwn",
+      "name": "LWN.net",
+      "type": "rss",
+      "url": "https://lwn.net/headlines/newrss",
+      "language": "en",
+      "tags": ["linux", "kernel", "open source", "security"],
+      "weight": 1.2,
+      "enabled": true
+    },
+    {
+      "id": "phoronix",
+      "name": "Phoronix",
+      "type": "rss",
+      "url": "https://www.phoronix.com/rss.php",
+      "language": "en",
+      "tags": ["linux", "kernel", "open source", "hardware"],
+      "weight": 1.0,
+      "enabled": true
+    },
+    {
+      "id": "diolinux",
+      "name": "Diolinux",
+      "type": "rss",
+      "url": "https://diolinux.com.br/feed",
+      "language": "pt-BR",
+      "tags": ["linux", "software livre", "open source", "desktop linux"],
+      "weight": 1.2,
+      "enabled": true
+    },
+    {
+      "id": "sempreupdate",
+      "name": "SempreUpdate",
+      "type": "rss",
+      "url": "https://sempreupdate.com.br/feed/",
+      "language": "pt-BR",
+      "tags": ["linux", "software livre", "seguranca", "open source"],
+      "weight": 1.0,
+      "enabled": true
+    },
+    {
+      "id": "br-linux",
+      "name": "BR-Linux",
+      "type": "rss",
+      "url": "https://br-linux.org/feed/",
+      "language": "pt-BR",
+      "tags": ["linux", "software livre", "open source"],
+      "weight": 1.0,
+      "enabled": true
+    },
+    {
+      "id": "example-html",
+      "name": "Example HTML Source",
+      "type": "html",
+      "url": "https://example.com/news",
+      "language": "en",
+      "tags": ["open source"],
+      "weight": 1.0,
+      "enabled": false,
+      "selectors": {
+        "item": "article",
+        "title": "h2",
+        "link": "a",
+        "summary": "p",
+        "date": "time",
+        "author": ".author"
+      }
+    }
+  ]
+}
