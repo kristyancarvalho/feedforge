@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: feedforge
+      POSTGRES_PASSWORD: feedforge
+      POSTGRES_DB: feedforge
+    volumes:
+      - feedforge-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U feedforge -d feedforge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://feedforge:feedforge@db:5432/feedforge
+      APP_PORT: "3000"
+      NODE_ENV: production
+      SOURCES_FILE: ./sources.json
+      CRAWLER_USER_AGENT: FeedForgeBot/0.1
+      CRAWLER_TIMEOUT_MS: "15000"
+      CRAWLER_MAX_CONCURRENT: "3"
+      CRON_ENABLED: "true"
+      CRON_SCHEDULE: "0 */3 * * *"
+      PUBLIC_APP_NAME: FeedForge
+    ports:
+      - "3000:3000"
+
+volumes:
+  feedforge-db-data:
