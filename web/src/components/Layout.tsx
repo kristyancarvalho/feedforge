@@ -1,43 +1,61 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
+import { useI18n } from "../i18n/I18nProvider";
+import { Logo } from "./Logo";
+import { LanguageToggle } from "./LanguageToggle";
+import { ThemeToggle } from "./ThemeToggle";
+import { OperationalStatus } from "./OperationalStatus";
+import { RadarIcon, RunsIcon, SavedIcon, SourcesIcon } from "./icons";
 
-const links = [
-  { to: "/", label: "Radar", end: true },
-  { to: "/saved", label: "Saved News", end: false },
-  { to: "/sources", label: "Sources", end: false },
-  { to: "/runs", label: "Crawler Runs", end: false }
-];
+const NAV = [
+  { to: "/", end: true, key: "nav.radar", Icon: RadarIcon },
+  { to: "/saved", end: false, key: "nav.saved", Icon: SavedIcon },
+  { to: "/sources", end: false, key: "nav.sources", Icon: SourcesIcon },
+  { to: "/runs", end: false, key: "nav.runs", Icon: RunsIcon }
+] as const;
 
-export const Layout = () => (
-  <div className="layout">
-    <header className="topbar">
-      <div className="topbar__brand">
-        <span className="topbar__logo">FF</span>
-        <div className="topbar__title">
-          <strong>FeedForge</strong>
-          <small>Open Source Radar</small>
-        </div>
-      </div>
-      <nav className="topbar__nav">
-        {links.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            end={link.end}
-            className={({ isActive }) =>
-              isActive ? "topbar__link topbar__link--active" : "topbar__link"
-            }
-          >
-            {link.label}
+export function Layout() {
+  const { t } = useI18n();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    function onScroll() {
+      setScrolled(window.scrollY > 4);
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <div className="app-shell">
+      <header className="app-header" data-scrolled={scrolled}>
+        <div className="header-inner">
+          <NavLink to="/" className="brand" aria-label={t("app.name")}>
+            <Logo size={30} title={t("app.name")} />
+            <span className="brand-text">
+              <span className="brand-name">{t("app.name")}</span>
+              <span className="brand-tagline">{t("app.tagline")}</span>
+            </span>
           </NavLink>
-        ))}
-      </nav>
-      <div className="topbar__meta">
-        <span>Deterministic. Local-first.</span>
-        <span>No LLMs.</span>
-      </div>
-    </header>
-    <main className="content">
-      <Outlet />
-    </main>
-  </div>
-);
+          <nav className="main-nav" aria-label={t("app.name")}>
+            {NAV.map(({ to, end, key, Icon }) => (
+              <NavLink key={to} to={to} end={end} className="nav-link">
+                <Icon className="nav-icon" />
+                <span>{t(key)}</span>
+              </NavLink>
+            ))}
+          </nav>
+          <div className="header-actions">
+            <OperationalStatus />
+            <ThemeToggle />
+            <LanguageToggle />
+          </div>
+        </div>
+      </header>
+      <main className="app-main">
+        <Outlet />
+      </main>
+    </div>
+  );
+}

@@ -1,38 +1,33 @@
-import type { ReactNode } from "react";
+import { useI18n } from "../i18n/I18nProvider";
 
-export const Loading = ({ label = "Loading" }: { label?: string }) => (
-  <div className="state-view">
-    <span className="spinner" />
-    <span>{label}…</span>
-  </div>
-);
+export function Loading({ label }: { label?: string }) {
+  const { t } = useI18n();
+  return (
+    <div className="state-view" role="status" aria-live="polite">
+      <span className="spinner" aria-hidden="true" />
+      <span>{label ?? t("common.loading")}</span>
+    </div>
+  );
+}
 
-export const ErrorView = ({
-  message,
-  onRetry
-}: {
-  message: string;
-  onRetry?: () => void;
-}) => (
-  <div className="state-view state-view--error">
-    <span>{message}</span>
-    {onRetry ? (
-      <button type="button" className="btn btn--ghost" onClick={onRetry}>
-        Retry
-      </button>
-    ) : null}
-  </div>
-);
+export function ErrorView({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const { t } = useI18n();
+  return (
+    <div className="state-view" role="alert">
+      <span>{message}</span>
+      {onRetry ? (
+        <button type="button" className="button button-ghost" onClick={onRetry}>
+          {t("actions.retry")}
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
-export const EmptyState = ({
-  message,
-  action
-}: {
-  message: string;
-  action?: ReactNode;
-}) => (
-  <div className="state-view state-view--empty">
-    <span>{message}</span>
-    {action}
-  </div>
-);
+export function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="state-view empty-state">
+      <span>{message}</span>
+    </div>
+  );
+}
