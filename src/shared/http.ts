@@ -1,4 +1,4 @@
-import { request } from "undici";
+import { fetch } from "undici";
 
 export interface FetchTextOptions {
   userAgent: string;
@@ -9,21 +9,27 @@ export const fetchText = async (
   url: string,
   options: FetchTextOptions
 ): Promise<string> => {
-  const response = await request(url, {
-    method: "GET",
-    maxRedirections: 5,
-    headersTimeout: options.timeoutMs,
-    bodyTimeout: options.timeoutMs,
-    headers: {
-      "user-agent": options.userAgent,
-      accept:
-        "application/rss+xml, application/atom+xml, application/xml, text/xml, text/html;q=0.9, */*;q=0.8"
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        "user-agent": options.userAgent,
+        accept:
+          "application/rss+xml, application/atom+xml, application/xml, text/xml, text/html;q=0.9, */*;q=0.8"
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
     }
-  });
 
-  if (response.statusCode >= 400) {
-    throw new Error(`Request failed with status ${response.statusCode}`);
+    return await response.text();
+  } finally {
+    clearTimeout(timeout);
   }
-
-  return response.body.text();
 };
