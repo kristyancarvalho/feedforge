@@ -107,29 +107,34 @@ export function RadarPage() {
       {runError ? <ErrorView message={runError} /> : null}
       {summaryRun ? <RunSummary run={summaryRun} title={t("runs.latestRun")} /> : null}
 
-      <FilterBar fields={RADAR_FIELDS} />
-
-      {news.loading ? (
-        <Loading />
-      ) : news.error && news.items.length === 0 ? (
-        <ErrorView message={news.error} onRetry={news.retry} />
-      ) : news.items.length === 0 ? (
-        <EmptyState message={t("radar.empty")} />
-      ) : (
-        <>
-          <NewsGrid items={news.items} onSave={onSave} onUnsave={onUnsave} />
-          <div ref={news.sentinelRef} className="sentinel" />
-          <div className="infinite-footer">
-            {news.loadingMore ? (
-              <Loading />
-            ) : news.error ? (
-              <ErrorView message={t("common.loadMoreError")} onRetry={news.retry} />
-            ) : !news.hasMore ? (
-              <span className="dim">{t("common.endOfResults")}</span>
-            ) : null}
-          </div>
-        </>
-      )}
+      <div className="radar-layout">
+        <div className="radar-main">
+          {news.loading ? (
+            <Loading />
+          ) : news.error && news.items.length === 0 ? (
+            <ErrorView message={news.error} onRetry={news.retry} />
+          ) : news.items.length === 0 ? (
+            <EmptyState message={t("radar.empty")} />
+          ) : (
+            <>
+              <NewsGrid items={news.items} onSave={onSave} onUnsave={onUnsave} />
+              <div ref={news.sentinelRef} className="sentinel" />
+              <div className="infinite-footer">
+                {news.loadingMore ? (
+                  <Loading />
+                ) : news.error ? (
+                  <ErrorView message={t("common.loadMoreError")} onRetry={news.retry} />
+                ) : !news.hasMore ? (
+                  <span className="dim">{t("common.endOfResults")}</span>
+                ) : null}
+              </div>
+            </>
+          )}
+        </div>
+        <aside className="radar-aside">
+          <FilterBar fields={RADAR_FIELDS} variant="aside" />
+        </aside>
+      </div>
     </div>
   );
 }
