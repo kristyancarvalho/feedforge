@@ -27,15 +27,16 @@ export class ApiError extends Error {
 }
 
 const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
+  const headers: Record<string, string> = {
+    ...((init?.headers as Record<string, string>) ?? {})
+  };
+  if (init?.body !== undefined) {
+    headers["content-type"] = "application/json";
+  }
+
   let response: Response;
   try {
-    response = await fetch(path, {
-      ...init,
-      headers: {
-        "content-type": "application/json",
-        ...(init?.headers ?? {})
-      }
-    });
+    response = await fetch(path, { ...init, headers });
   } catch (error) {
     throw new ApiError(
       "NETWORK_ERROR",
