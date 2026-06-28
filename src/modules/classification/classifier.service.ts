@@ -3,13 +3,22 @@ import { logger } from "../../shared/logger";
 import type { EditorialProfile } from "../sources/source.schema";
 import { KEYWORDS } from "./keywords";
 import {
+  NEGATIVE_SIGNALS,
+  OPEN_SOURCE_RELEVANCE_TERMS,
+  TECHNICAL_DEPTH_TERMS
+} from "./signals";
+import {
   finalScore,
   freshnessScore,
   keywordScore,
+  matchStrength,
   negativePenalty,
   noveltyScore,
+  openSourceRelevanceScore,
   sourceScore,
+  technicalDepthScore,
   topicScore,
+  type MatchStrength,
   type RecentReference
 } from "./scoring.service";
 import { matchTerms, type MatchField, type TermMatch } from "./topic-matcher";
@@ -33,10 +42,13 @@ export interface ClassificationResult {
   finalScore: number;
   topicScore: number;
   keywordScore: number;
+  technicalDepthScore: number;
+  openSourceRelevanceScore: number;
   sourceScore: number;
   freshnessScore: number;
   noveltyScore: number;
   negativePenalty: number;
+  matchStrength: MatchStrength;
   detectedTopics: string[];
   matchedKeywords: string[];
   reasons: string[];
@@ -52,11 +64,16 @@ const FIELD_LABELS: Record<MatchField, string> = {
 const buildReasons = (
   topicMatches: TermMatch[],
   keywordMatches: TermMatch[],
+  technicalMatches: TermMatch[],
+  relevanceMatches: TermMatch[],
   negativeMatches: TermMatch[],
   scores: {
+    technicalDepth: number;
+    openSourceRelevance: number;
     freshness: number;
     source: number;
     novelty: number;
+    penalty: number;
   }
 ): string[] => {
   const reasons: string[] = [];
@@ -72,6 +89,24 @@ const buildReasons = (
 
   if (topicMatches.length === 0 && keywordMatches.length === 0) {
     reasons.push("No editorial topics or keywords matched");
+  }
+
+  if (scores.openSourceRelevance >= 60) {
+    const sample = relevanceMatches.slice(0, 3).map((match) => match.term).join(", ");
+    reasons.push(`Strong open source relevance (${sample})`);
+  } else if (scores.openSourceRelevance >= 30) {
+    reasons.push("Some open source relevance detected");
+  } else {
+    reasons.push("Weak open source relevance reduced score");
+  }
+
+  if (scores.technicalDepth >= 60) {
+    const sample = technicalMatches.slice(0, 3).map((match) => match.term).join(", ");
+    reasons.push(`High technical depth (${sample})`);
+  } else if (scores.technicalDepth >= 30) {
+    reasons.push("Moderate technical depth detected");
+  } else {
+    reasons.push("Low technical depth reduced score");
   }
 
   if (scores.freshness >= 100) {
@@ -102,6 +137,10 @@ const buildReasons = (
     reasons.push(`Reduced score due to negative topic "${match.term}"`);
   }
 
+  if (scores.penalty >= 40) {
+    reasons.push("Strong penalty applied for non-technical or promotional content");
+  }
+
   return reasons;
 };
 
@@ -117,13 +156,20 @@ export const classifyItem = (input: ClassificationInput): ClassificationResult =
 
   const topicMatches = matchTerms(input.topics, vector);
   const keywordMatches = matchTerms(KEYWORDS, vector);
-  const negativeMatches = matchTerms(input.negativeTopics, vector);
+  const technicalMatches = matchTerms(TECHNICAL_DEPTH_TERMS, vector);
+  const relevanceMatches = matchTerms(OPEN_SOURCE_RELEVANCE_TERMS, vector);
+  const negativeMatches = matchTerms(
+    [...input.negativeTopics, ...NEGATIVE_SIGNALS],
+    vector
+  );
 
   const detectedTopics = topicMatches.map((match) => match.term);
   const matchedKeywords = keywordMatches.map((match) => match.term);
 
   const topic = topicScore(topicMatches);
   const keyword = keywordScore(keywordMatches);
+  const technicalDepth = technicalDepthScore(technicalMatches);
+  const openSourceRelevance = openSourceRelevanceScore(relevanceMatches);
   const source = sourceScore(input.sourceWeight);
   const freshness = freshnessScore(input.publishedAt, input.dateInferred, input.now);
   const novelty = noveltyScore(
@@ -135,21 +181,36 @@ export const classifyItem = (input: ClassificationInput): ClassificationResult =
   const breakdown = {
     topicScore: topic,
     keywordScore: keyword,
+    technicalDepthScore: technicalDepth,
+    openSourceRelevanceScore: openSourceRelevance,
     sourceScore: source,
     freshnessScore: freshness,
     noveltyScore: novelty,
     negativePenalty: penalty
   };
 
-  const reasons = buildReasons(topicMatches, keywordMatches, negativeMatches, {
-    freshness,
-    source,
-    novelty
-  });
+  const reasons = buildReasons(
+    topicMatches,
+    keywordMatches,
+    technicalMatches,
+    relevanceMatches,
+    negativeMatches,
+    {
+      technicalDepth,
+      openSourceRelevance,
+      freshness,
+      source,
+      novelty,
+      penalty
+    }
+  );
+
+  const computedFinalScore = finalScore(breakdown);
 
   return {
     ...breakdown,
-    finalScore: finalScore(breakdown),
+    finalScore: computedFinalScore,
+    matchStrength: matchStrength(computedFinalScore),
     detectedTopics,
     matchedKeywords,
     reasons

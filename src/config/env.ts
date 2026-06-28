@@ -15,7 +15,8 @@ const envSchema = z.object({
   CRAWLER_MAX_CONCURRENT: z.coerce.number().int().positive().default(3),
   CRON_ENABLED: booleanLike.default(true),
   CRON_SCHEDULE: z.string().min(1).default("0 */3 * * *"),
-  PUBLIC_APP_NAME: z.string().min(1).default("FeedForge")
+  PUBLIC_APP_NAME: z.string().min(1).default("FeedForge"),
+  DEFAULT_MIN_RECOMMENDED_SCORE: z.coerce.number().int().min(0).max(100).default(55)
 });
 
 export type Env = z.infer<typeof envSchema>;

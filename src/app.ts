@@ -10,6 +10,7 @@ import { registerNewsRoutes } from "./modules/news/news.routes";
 import { registerSourceRoutes } from "./modules/sources/source.routes";
 import { registerRunsRoutes } from "./modules/runs/runs.routes";
 import { registerCrawlerRoutes } from "./modules/crawler/crawler.routes";
+import { registerStatusRoutes } from "./modules/status/status.routes";
 
 export const buildApp = (prisma: PrismaClient) => {
   const app = Fastify({ logger: false });
@@ -50,6 +51,7 @@ export const buildApp = (prisma: PrismaClient) => {
   registerNewsRoutes(app, prisma);
   registerRunsRoutes(app, prisma);
   registerCrawlerRoutes(app, prisma);
+  registerStatusRoutes(app, prisma);
 
   const webDist = fileURLToPath(new URL("../web/dist", import.meta.url));
 

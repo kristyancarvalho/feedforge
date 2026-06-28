@@ -13,6 +13,9 @@ export interface SourceDTO {
   tags: string[];
   weight: number;
   enabled: boolean;
+  lastStatus: string;
+  successCount: number;
+  failureCount: number;
   lastRunAt: string | null;
   lastSuccessAt: string | null;
   lastError: string | null;
@@ -28,6 +31,9 @@ const serializeSource = (source: Source, itemsCollected: number): SourceDTO => (
   tags: source.tags,
   weight: source.weight,
   enabled: source.enabled,
+  lastStatus: source.lastStatus,
+  successCount: source.successCount,
+  failureCount: source.failureCount,
   lastRunAt: source.lastRunAt ? source.lastRunAt.toISOString() : null,
   lastSuccessAt: source.lastSuccessAt ? source.lastSuccessAt.toISOString() : null,
   lastError: source.lastError,

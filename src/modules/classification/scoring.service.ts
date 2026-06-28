@@ -19,11 +19,25 @@ const KEYWORD_FIELD_POINTS: Record<MatchField, number> = {
   content: 10
 };
 
+const TECHNICAL_DEPTH_FIELD_POINTS: Record<MatchField, number> = {
+  title: 32,
+  summary: 24,
+  content: 18,
+  tags: 16
+};
+
+const OPEN_SOURCE_RELEVANCE_FIELD_POINTS: Record<MatchField, number> = {
+  title: 38,
+  tags: 30,
+  summary: 22,
+  content: 14
+};
+
 const NEGATIVE_FIELD_POINTS: Record<MatchField, number> = {
-  title: 30,
-  summary: 20,
-  tags: 20,
-  content: 12
+  title: 46,
+  summary: 32,
+  tags: 30,
+  content: 20
 };
 
 const sumMatches = (
@@ -37,11 +51,32 @@ export const topicScore = (matches: TermMatch[]): number =>
 export const keywordScore = (matches: TermMatch[]): number =>
   clamp(sumMatches(matches, KEYWORD_FIELD_POINTS));
 
+export const technicalDepthScore = (matches: TermMatch[]): number =>
+  clamp(sumMatches(matches, TECHNICAL_DEPTH_FIELD_POINTS));
+
+export const openSourceRelevanceScore = (matches: TermMatch[]): number =>
+  clamp(sumMatches(matches, OPEN_SOURCE_RELEVANCE_FIELD_POINTS));
+
 export const negativePenalty = (matches: TermMatch[]): number =>
-  clamp(sumMatches(matches, NEGATIVE_FIELD_POINTS));
+  clamp(sumMatches(matches, NEGATIVE_FIELD_POINTS) * 1.25);
 
 export const sourceScore = (weight: number): number =>
   clamp(70 + (weight - 1) * 100);
+
+export type MatchStrength = "strong" | "good" | "weak" | "low";
+
+export const matchStrength = (score: number): MatchStrength => {
+  if (score >= 80) {
+    return "strong";
+  }
+  if (score >= 65) {
+    return "good";
+  }
+  if (score >= 45) {
+    return "weak";
+  }
+  return "low";
+};
 
 export interface RecentReference {
   title: string;
@@ -98,6 +133,8 @@ export const noveltyScore = (
 export interface ScoreBreakdown {
   topicScore: number;
   keywordScore: number;
+  technicalDepthScore: number;
+  openSourceRelevanceScore: number;
   sourceScore: number;
   freshnessScore: number;
   noveltyScore: number;
@@ -106,10 +143,12 @@ export interface ScoreBreakdown {
 
 export const finalScore = (breakdown: ScoreBreakdown): number =>
   clamp(
-    breakdown.topicScore * 0.35 +
-      breakdown.keywordScore * 0.25 +
-      breakdown.sourceScore * 0.15 +
-      breakdown.freshnessScore * 0.15 +
-      breakdown.noveltyScore * 0.1 -
+    breakdown.topicScore * 0.3 +
+      breakdown.keywordScore * 0.2 +
+      breakdown.technicalDepthScore * 0.15 +
+      breakdown.openSourceRelevanceScore * 0.15 +
+      breakdown.sourceScore * 0.08 +
+      breakdown.freshnessScore * 0.07 +
+      breakdown.noveltyScore * 0.05 -
       breakdown.negativePenalty
   );

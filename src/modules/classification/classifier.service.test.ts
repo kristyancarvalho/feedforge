@@ -73,4 +73,61 @@ describe("classifier", () => {
     );
     expect(result.reasons).toContain("No editorial topics or keywords matched");
   });
+
+  it("rewards technical depth and explains it", () => {
+    const result = classifyItem(
+      baseInput({
+        title: "Kernel CVE patch and release notes for the new driver",
+        summary: "Detailed changelog covering the vulnerability and protocol changes.",
+        contentText: "The implementation updates the scheduler and syscall handling."
+      })
+    );
+    expect(result.technicalDepthScore).toBeGreaterThan(0);
+    expect(
+      result.reasons.some(
+        (reason) =>
+          reason.startsWith("High technical depth") ||
+          reason === "Moderate technical depth detected"
+      )
+    ).toBe(true);
+  });
+
+  it("rewards explicit open source relevance and explains it", () => {
+    const result = classifyItem(
+      baseInput({
+        title: "Open source maintainer relicenses project under the MIT license",
+        summary: "The community foundation welcomes new contributors upstream.",
+        sourceTags: ["open source", "linux"]
+      })
+    );
+    expect(result.openSourceRelevanceScore).toBeGreaterThan(0);
+    expect(
+      result.reasons.some(
+        (reason) =>
+          reason.startsWith("Strong open source relevance") ||
+          reason === "Some open source relevance detected"
+      )
+    ).toBe(true);
+  });
+
+  it("derives a match strength label consistent with the final score", () => {
+    const strong = classifyItem(baseInput());
+    expect(["strong", "good", "weak", "low"]).toContain(strong.matchStrength);
+    if (strong.finalScore >= 80) {
+      expect(strong.matchStrength).toBe("strong");
+    }
+
+    const weak = classifyItem(
+      baseInput({
+        title: "Generic press release about a startup funding round",
+        summary: "Marketing fluff with no technical content.",
+        sourceTags: [],
+        topics: ["linux"],
+        sourceWeight: 0.9,
+        negativeTopics: ["startup funding", "press release"]
+      })
+    );
+    expect(weak.finalScore).toBeLessThan(strong.finalScore);
+    expect(["weak", "low"]).toContain(weak.matchStrength);
+  });
 });

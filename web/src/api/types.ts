@@ -1,11 +1,3 @@
-export interface PaginatedResult<T> {
-  data: T[];
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
-
 export interface NewsSource {
   id: string;
   name: string;
@@ -20,10 +12,13 @@ export interface Classification {
   finalScore: number;
   topicScore: number;
   keywordScore: number;
+  technicalDepthScore: number;
+  openSourceRelevanceScore: number;
   sourceScore: number;
   freshnessScore: number;
   noveltyScore: number;
   negativePenalty: number;
+  matchStrength: string;
   detectedTopics: string[];
   matchedKeywords: string[];
   reasons: string[];
@@ -53,6 +48,13 @@ export interface NewsItem {
   saved: SavedInfo | null;
 }
 
+export interface NewsCursorResult {
+  items: NewsItem[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  total: number;
+}
+
 export interface SourceHealth {
   id: string;
   name: string;
@@ -62,6 +64,9 @@ export interface SourceHealth {
   tags: string[];
   weight: number;
   enabled: boolean;
+  lastStatus: string;
+  successCount: number;
+  failureCount: number;
   lastRunAt: string | null;
   lastSuccessAt: string | null;
   lastError: string | null;
@@ -85,23 +90,70 @@ export interface CrawlerRunInfo {
   errorMessage: string | null;
 }
 
+export interface PaginatedResult<T> {
+  data: T[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface SourceSyncResult {
   total: number;
   created: number;
   updated: number;
 }
 
+export interface StatusInfo {
+  status: string;
+  database: string;
+  recommendedMinScore: number;
+  crawler: {
+    active: boolean;
+    latestRunStatus: string | null;
+    latestRunAt: string | null;
+  };
+  sources: {
+    total: number;
+    healthy: number;
+    failing: number;
+  };
+  cron: {
+    enabled: boolean;
+    schedule: string;
+  };
+}
+
 export interface NewsFilters {
   q?: string;
   source?: string;
+  sourceType?: string;
   topic?: string;
+  keyword?: string;
   language?: string;
   status?: string;
   saved?: string;
   minScore?: string;
+  maxScore?: string;
+  matchStrength?: string;
+  publishedFrom?: string;
+  publishedTo?: string;
+  runId?: string;
+  hasSummary?: string;
+  hasReasons?: string;
+  hasNegativePenalty?: string;
   sort?: string;
-  page?: number;
-  limit?: number;
+  limit?: string;
+  cursor?: string;
+}
+
+export interface RunFilters {
+  trigger?: string;
+  status?: string;
+  startedFrom?: string;
+  startedTo?: string;
+  page?: string;
+  limit?: string;
 }
 
 export const SAVED_STATUSES = [
@@ -114,3 +166,17 @@ export const SAVED_STATUSES = [
 ] as const;
 
 export type SavedStatus = (typeof SAVED_STATUSES)[number];
+
+export const SORT_OPTIONS = [
+  "score_desc",
+  "published_desc",
+  "published_asc",
+  "source_name",
+  "freshness_desc",
+  "technical_depth_desc",
+  "open_source_relevance_desc",
+  "negative_penalty_desc",
+  "saved_date_desc"
+] as const;
+
+export type SortOption = (typeof SORT_OPTIONS)[number];

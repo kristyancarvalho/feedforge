@@ -14,6 +14,30 @@ It is not a generic RSS reader, an AI writing assistant, or a social media trend
 
 Following open source news across dozens of feeds is noisy. FeedForge filters that noise against an explicit editorial profile so the signal you care about — Linux, security, developer tools, infrastructure, self-hosting, programming languages — rises to the top, with a clear explanation of why each item ranked where it did.
 
+## What's New in 1.1.1
+
+- Radar now uses a two-column layout with the filters in a sticky side panel, giving the news grid more horizontal room. The panel collapses above the grid on small screens.
+- The filter search field is the primary control, with a clearer label, a search icon, and a stronger orange focus ring.
+- Translated contextual help indicators were added to the filter controls.
+- The "Open original" action uses a compact `Original` label with a full accessible name and no longer wraps onto two lines.
+- Icons inside the orange primary buttons now use a high-contrast color.
+- The header status tooltip opens downward so it is no longer clipped by the top bar.
+- The score breakdown renders filled progress bars proportional to each score, with the negative penalty shown in a distinct danger color.
+- Source reliability fixes: Viva o Linux now points to its working `https://www.vivaolinux.com.br/index.rdf` feed, and 9to5Linux is disabled by default because its server-side feed is blocked by a Cloudflare anti-bot challenge that cannot be fetched without browser automation (out of scope). Re-enable it in `sources.json` if you have a working access path.
+
+## What's New in 1.1.0
+
+- Refreshed orange/black visual identity with a dedicated FeedForge logo.
+- Light and dark themes with a persisted toggle.
+- Bilingual interface in English and Brazilian Portuguese with a language toggle.
+- Responsive news grid with cursor-based infinite scroll.
+- Operational status indicator in the header (database, crawler, sources, cron).
+- Stricter, more explainable classification with technical-depth and open-source-relevance signals and `strong`/`good`/`weak`/`low` match-strength labels.
+- Advanced news filters (match strength, score range, source type, keyword, date range, summary/reasons/penalty presence, and more).
+- Expanded default Portuguese and English open source sources.
+- Contextual help tooltips and an enriched icon set.
+- Broader backend and frontend test coverage.
+
 ## Features
 
 - Source declaration through a single `sources.json` file.
@@ -22,13 +46,14 @@ Following open source news across dozens of feeds is noisy. FeedForge filters th
 - Explicit HTML scraping for sources without a usable feed.
 - Text, URL, and date normalization.
 - Deduplication across repeated crawls.
-- Deterministic classification and scoring with a full score breakdown.
+- Deterministic classification and scoring with a full score breakdown and match-strength labels.
 - Saved news workflow with editorial statuses and notes.
 - Cron-based automatic crawling and classification.
 - Manual "Run crawler and classification" action from the SPA.
 - Radar dashboard, news detail, saved news, source health, and run history pages.
+- Responsive news grid with infinite scroll, advanced filters, light/dark themes, and a bilingual (`en` / `pt-BR`) interface.
 - REST API with structured errors.
-- Test coverage for the core logic.
+- Test coverage for the core backend and frontend logic.
 - Docker Compose orchestration.
 
 ## Open Source Focus
@@ -210,28 +235,41 @@ curl -X POST http://localhost:3000/api/sources/reload
 
 ## How Classification Works
 
-Classification is deterministic and explainable. Each news item is normalized and scored against the editorial profile, source tags, and an open source keyword list. The result includes detected topics, matched keywords, a score breakdown, and human-readable reasons.
+Classification is deterministic and explainable. Each news item is normalized and scored against the editorial profile, source tags, an open source keyword list, technical-depth signals, and open-source-relevance signals. The result includes detected topics, matched keywords, a score breakdown, a match-strength label, and human-readable reasons.
 
 The final score is a weighted combination, clamped from 0 to 100:
 
 ```txt
 finalScore =
-  topicScore * 0.35 +
-  keywordScore * 0.25 +
-  sourceScore * 0.15 +
-  freshnessScore * 0.15 +
-  noveltyScore * 0.10 -
+  topicScore * 0.30 +
+  keywordScore * 0.20 +
+  technicalDepthScore * 0.15 +
+  openSourceRelevanceScore * 0.15 +
+  sourceScore * 0.08 +
+  freshnessScore * 0.07 +
+  noveltyScore * 0.05 -
   negativePenalty
 ```
 
-All partial scores are normalized from 0 to 100:
+All partial scores are normalized from 0 to 100, weighting title over tags over summary over body:
 
-- `topicScore`: editorial topic matches, weighting title over summary over body, with source tags considered.
+- `topicScore`: editorial topic matches, with source tags considered.
 - `keywordScore`: open source keyword matches, with strong weight for title matches and a boost from source tags.
+- `technicalDepthScore`: signals that an item carries real technical substance rather than surface coverage.
+- `openSourceRelevanceScore`: signals that an item is specifically about open source rather than generic technology.
 - `sourceScore`: derived from source weight (`1.0 -> 70`, `1.1 -> 80`, `1.2 -> 90`, `>= 1.3 -> 100`).
 - `freshnessScore`: today `100`, last 3 days `85`, last 7 days `70`, last 30 days `40`, older `15`, unknown date `25`.
 - `noveltyScore`: reduced when many similar recent items already exist, keeping the radar from being dominated by repeats.
-- `negativePenalty`: subtracted when an item strongly matches the negative topics.
+- `negativePenalty`: subtracted (weighted) when an item matches the negative topics.
+
+The final score maps to a match-strength label shown across the UI:
+
+```txt
+strong   score >= 80
+good     score >= 65
+weak     score >= 45
+low      score <  45
+```
 
 Every item stores reasons such as:
 
@@ -255,7 +293,7 @@ published
 ignored
 ```
 
-You can edit notes per item and filter saved news by status, source, topic, language, and minimum score. Unsaving removes the saved record.
+You can edit notes per item and filter saved news by status, source, topic, language, match strength, and minimum score. Unsaving removes the saved record.
 
 ## How Cron Works
 
@@ -306,7 +344,7 @@ GET    /api/runs/latest
 POST   /api/crawler/run
 ```
 
-The news list supports `q`, `source`, `topic`, `minScore`, `status`, `saved`, `language`, `page`, `limit`, and `sort` query parameters, sorted by final score then published date by default.
+The news list is cursor-paginated. It returns `{ items, nextCursor, hasMore, total }` and supports `cursor` and `limit` (default `24`, max `60`) together with the filters `q`, `source`, `sourceType`, `topic`, `keyword`, `language`, `status`, `saved`, `minScore`, `maxScore`, `matchStrength`, `publishedFrom`, `publishedTo`, `runId`, `hasSummary`, `hasReasons`, `hasNegativePenalty`, and `sort`. Results are sorted by final score then published date by default. The runs list uses classic `page`/`limit` pagination.
 
 ## Running Tests
 
@@ -316,7 +354,7 @@ Tests are written with Vitest and never depend on live external websites; all pa
 docker compose run --rm app npm test
 ```
 
-Tests cover environment validation, source schema validation, RSS and HTML parsing, text and URL normalization, fingerprint generation, deduplication, topic and keyword matching, source/freshness/novelty scoring, negative penalty, final score calculation, classification reasons, run status calculation, and saved status validation.
+Backend tests cover environment validation, source schema validation, RSS and HTML parsing, text and URL normalization, fingerprint generation, deduplication, topic and keyword matching, source/freshness/novelty scoring, technical-depth and open-source-relevance scoring, negative penalty, final score calculation, match-strength labels, classification reasons, news and run filter parsing, status service, run status calculation, and saved status validation. Frontend tests cover query-parameter parsing, filter formatting, source-health levels, match-strength bands, the API query builder and error type, and internationalization (language inference, translation fallback, and English/Portuguese dictionary parity).
 
 ## Troubleshooting
 

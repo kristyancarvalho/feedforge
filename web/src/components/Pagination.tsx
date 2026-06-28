@@ -1,34 +1,36 @@
-interface Props {
+import { useI18n } from "../i18n/I18nProvider";
+
+type Props = {
   page: number;
   totalPages: number;
   onChange: (page: number) => void;
-}
+};
 
-export const Pagination = ({ page, totalPages, onChange }: Props) => {
-  if (totalPages <= 1) {
-    return null;
-  }
+export function Pagination({ page, totalPages, onChange }: Props) {
+  const { t } = useI18n();
+  if (totalPages <= 1) return null;
+
   return (
-    <div className="pagination">
+    <nav className="pagination" aria-label={t("runs.title")}>
       <button
         type="button"
-        className="btn btn--ghost"
+        className="button button-ghost"
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
       >
-        Previous
+        ‹
       </button>
-      <span className="pagination__info">
-        Page {page} of {totalPages}
+      <span className="pagination-info">
+        {page} / {totalPages}
       </span>
       <button
         type="button"
-        className="btn btn--ghost"
+        className="button button-ghost"
         disabled={page >= totalPages}
         onClick={() => onChange(page + 1)}
       >
-        Next
+        ›
       </button>
-    </div>
+    </nav>
   );
-};
+}

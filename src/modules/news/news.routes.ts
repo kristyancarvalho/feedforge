@@ -17,7 +17,7 @@ export const registerNewsRoutes = (app: FastifyInstance, prisma: PrismaClient): 
   const saved = new SavedNewsService(prisma);
 
   app.get("/api/news", async (request) =>
-    news.list(request.query as Record<string, unknown>)
+    news.listCursor(request.query as Record<string, unknown>)
   );
 
   app.get<{ Params: IdParams }>("/api/news/:id", async (request) =>

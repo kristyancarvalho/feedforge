@@ -96,6 +96,13 @@ export class CrawlerPipelineService {
     const normalized = this.normalize(enabledSources, crawlResults, now);
     const persistResult = await this.dedup.persist(normalized);
 
+    if (persistResult.affectedNewsItemIds.length > 0) {
+      await this.prisma.newsItem.updateMany({
+        where: { id: { in: persistResult.affectedNewsItemIds } },
+        data: { lastSeenRunId: run.id }
+      });
+    }
+
     await this.classifier.classifyNewsItems(
       persistResult.affectedNewsItemIds,
       config.editorialProfile,
@@ -174,9 +181,10 @@ export class CrawlerPipelineService {
         where: { id: source.id },
         data: {
           lastRunAt: now,
+          lastStatus: result.ok ? "healthy" : "failing",
           ...(result.ok
-            ? { lastSuccessAt: now, lastError: null }
-            : { lastError: result.error })
+            ? { lastSuccessAt: now, lastError: null, successCount: { increment: 1 } }
+            : { lastError: result.error, failureCount: { increment: 1 } })
         }
       });
     }

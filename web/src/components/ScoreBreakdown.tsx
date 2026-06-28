@@ -1,50 +1,72 @@
 import type { Classification } from "../api/types";
+import { useI18n } from "../i18n/I18nProvider";
+import { scoreBarWidth } from "../lib/scoreBar";
+import { HelpTooltip } from "./HelpTooltip";
 
-interface Row {
-  label: string;
-  value: number;
-  weight: string;
-}
+type ScoreKey =
+  | "topicScore"
+  | "keywordScore"
+  | "technicalDepthScore"
+  | "openSourceRelevanceScore"
+  | "sourceScore"
+  | "freshnessScore"
+  | "noveltyScore";
 
-const buildRows = (classification: Classification): Row[] => [
-  { label: "Topics", value: classification.topicScore, weight: "35%" },
-  { label: "Keywords", value: classification.keywordScore, weight: "25%" },
-  { label: "Source", value: classification.sourceScore, weight: "15%" },
-  { label: "Freshness", value: classification.freshnessScore, weight: "15%" },
-  { label: "Novelty", value: classification.noveltyScore, weight: "10%" }
+const POSITIVE_KEYS: ScoreKey[] = [
+  "topicScore",
+  "keywordScore",
+  "technicalDepthScore",
+  "openSourceRelevanceScore",
+  "sourceScore",
+  "freshnessScore",
+  "noveltyScore"
 ];
 
-export const ScoreBreakdown = ({
-  classification
-}: {
-  classification: Classification;
-}) => {
-  const rows = buildRows(classification);
+export function ScoreBreakdown({ classification }: { classification: Classification }) {
+  const { t } = useI18n();
+
   return (
-    <div className="breakdown">
-      {rows.map((row) => (
-        <div key={row.label} className="breakdown__row">
-          <div className="breakdown__head">
-            <span>{row.label}</span>
-            <span className="breakdown__weight">{row.weight}</span>
-          </div>
-          <div className="breakdown__bar">
-            <span
-              className="breakdown__fill"
-              style={{ width: `${Math.max(0, Math.min(100, row.value))}%` }}
-            />
-          </div>
-          <span className="breakdown__value">{Math.round(row.value)}</span>
-        </div>
+    <div className="score-breakdown">
+      {POSITIVE_KEYS.map((key) => (
+        <Row
+          key={key}
+          label={t(`scores.${key}`)}
+          help={t(`scores.help.${key}`)}
+          value={classification[key]}
+        />
       ))}
-      <div className="breakdown__row breakdown__row--penalty">
-        <div className="breakdown__head">
-          <span>Negative penalty</span>
-        </div>
-        <span className="breakdown__value">
-          −{Math.round(classification.negativePenalty)}
-        </span>
-      </div>
+      <Row
+        label={t("scores.negativePenalty")}
+        help={t("scores.help.negativePenalty")}
+        value={classification.negativePenalty}
+        negative
+      />
     </div>
   );
-};
+}
+
+function Row({
+  label,
+  help,
+  value,
+  negative = false
+}: {
+  label: string;
+  help: string;
+  value: number;
+  negative?: boolean;
+}) {
+  const width = scoreBarWidth(value);
+  return (
+    <div className="score-row">
+      <span className="score-row-label">
+        {label}
+        <HelpTooltip label={label} text={help} />
+      </span>
+      <span className="score-bar" aria-hidden="true">
+        <span className="score-bar-fill" data-negative={negative} style={{ width: `${width}%` }} />
+      </span>
+      <span className="score-row-value">{Math.round(value)}</span>
+    </div>
+  );
+}

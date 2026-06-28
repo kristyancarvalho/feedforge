@@ -1,9 +1,46 @@
-import type { CrawlerRun, PrismaClient } from "@prisma/client";
+import type { CrawlerRun, Prisma, PrismaClient } from "@prisma/client";
 import {
   buildPaginatedResult,
   resolvePagination,
   type PaginatedResult
 } from "../../shared/pagination";
+
+const asTrimmed = (value: unknown): string | undefined =>
+  typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
+
+const asDate = (value: unknown): Date | undefined => {
+  if (typeof value !== "string" || value.trim() === "") {
+    return undefined;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+};
+
+export const buildRunWhere = (query: Record<string, unknown>): Prisma.CrawlerRunWhereInput => {
+  const where: Prisma.CrawlerRunWhereInput = {};
+  const trigger = asTrimmed(query.trigger);
+  const status = asTrimmed(query.status);
+  const from = asDate(query.startedFrom);
+  const to = asDate(query.startedTo);
+
+  if (trigger) {
+    where.trigger = trigger;
+  }
+  if (status) {
+    where.status = status;
+  }
+  if (from || to) {
+    where.startedAt = {};
+    if (from) {
+      where.startedAt.gte = from;
+    }
+    if (to) {
+      where.startedAt.lte = to;
+    }
+  }
+
+  return where;
+};
 
 export interface RunDTO {
   id: string;
@@ -50,13 +87,16 @@ export class RunsService {
       limit: query.limit as string
     });
 
+    const where = buildRunWhere(query);
+
     const [runs, total] = await Promise.all([
       this.prisma.crawlerRun.findMany({
+        where,
         orderBy: { startedAt: "desc" },
         skip: pagination.skip,
         take: pagination.limit
       }),
-      this.prisma.crawlerRun.count()
+      this.prisma.crawlerRun.count({ where })
     ]);
 
     return buildPaginatedResult(runs.map(serializeRun), total, pagination);

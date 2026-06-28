@@ -22,10 +22,13 @@ export interface ClassificationDTO {
   finalScore: number;
   topicScore: number;
   keywordScore: number;
+  technicalDepthScore: number;
+  openSourceRelevanceScore: number;
   sourceScore: number;
   freshnessScore: number;
   noveltyScore: number;
   negativePenalty: number;
+  matchStrength: string;
   detectedTopics: string[];
   matchedKeywords: string[];
   reasons: string[];
@@ -66,10 +69,13 @@ const toClassificationDTO = (
     finalScore: c.finalScore,
     topicScore: c.topicScore,
     keywordScore: c.keywordScore,
+    technicalDepthScore: c.technicalDepthScore,
+    openSourceRelevanceScore: c.openSourceRelevanceScore,
     sourceScore: c.sourceScore,
     freshnessScore: c.freshnessScore,
     noveltyScore: c.noveltyScore,
     negativePenalty: c.negativePenalty,
+    matchStrength: c.matchStrength,
     detectedTopics: c.detectedTopics,
     matchedKeywords: c.matchedKeywords,
     reasons: c.reasons
@@ -118,7 +124,7 @@ export const serializeNews = (
   saved: toSavedDTO(item)
 });
 
-const parseMinScore = (value: unknown): number | undefined => {
+const parseScore = (value: unknown): number | undefined => {
   if (value === undefined || value === null || value === "") {
     return undefined;
   }
@@ -126,7 +132,7 @@ const parseMinScore = (value: unknown): number | undefined => {
   return Number.isFinite(parsed) ? parsed : undefined;
 };
 
-const parseSaved = (value: unknown): boolean | undefined => {
+const parseBoolean = (value: unknown): boolean | undefined => {
   if (value === "true" || value === true) {
     return true;
   }
@@ -136,8 +142,52 @@ const parseSaved = (value: unknown): boolean | undefined => {
   return undefined;
 };
 
+const parseDate = (value: unknown): Date | undefined => {
+  if (typeof value !== "string" || value.trim() === "") {
+    return undefined;
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+};
+
 const asString = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
+
+const parseLimit = (value: unknown, fallback: number, max: number): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return Math.min(Math.floor(parsed), max);
+};
+
+export const buildNewsFilters = (query: Record<string, unknown>): NewsFilters => ({
+  q: asString(query.q),
+  source: asString(query.source),
+  sourceType: asString(query.sourceType),
+  topic: asString(query.topic),
+  keyword: asString(query.keyword),
+  language: asString(query.language),
+  status: asString(query.status),
+  saved: parseBoolean(query.saved),
+  minScore: parseScore(query.minScore),
+  maxScore: parseScore(query.maxScore),
+  matchStrength: asString(query.matchStrength),
+  publishedFrom: parseDate(query.publishedFrom),
+  publishedTo: parseDate(query.publishedTo),
+  runId: asString(query.runId),
+  hasSummary: parseBoolean(query.hasSummary),
+  hasReasons: parseBoolean(query.hasReasons),
+  hasNegativePenalty: parseBoolean(query.hasNegativePenalty),
+  sort: asString(query.sort)
+});
+
+export interface NewsCursorResult {
+  items: NewsDTO[];
+  nextCursor: string | null;
+  hasMore: boolean;
+  total: number;
+}
 
 export class NewsService {
   private readonly repository: NewsRepository;
@@ -147,16 +197,7 @@ export class NewsService {
   }
 
   async list(query: Record<string, unknown>): Promise<PaginatedResult<NewsDTO>> {
-    const filters: NewsFilters = {
-      q: asString(query.q),
-      source: asString(query.source),
-      topic: asString(query.topic),
-      language: asString(query.language),
-      status: asString(query.status),
-      saved: parseSaved(query.saved),
-      minScore: parseMinScore(query.minScore),
-      sort: asString(query.sort)
-    };
+    const filters = buildNewsFilters(query);
 
     const pagination = resolvePagination({
       page: query.page as string,
@@ -169,6 +210,20 @@ export class NewsService {
       total,
       pagination
     );
+  }
+
+  async listCursor(query: Record<string, unknown>): Promise<NewsCursorResult> {
+    const filters = buildNewsFilters(query);
+    const limit = parseLimit(query.limit, 24, 60);
+    const cursor = asString(query.cursor);
+
+    const page = await this.repository.listCursor(filters, limit, cursor);
+    return {
+      items: page.items.map((item) => serializeNews(item)),
+      nextCursor: page.nextCursor,
+      hasMore: page.hasMore,
+      total: page.total
+    };
   }
 
   async getById(id: string): Promise<NewsDTO> {

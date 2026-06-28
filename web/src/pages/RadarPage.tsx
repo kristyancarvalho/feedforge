@@ -1,242 +1,140 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
-import type { CrawlerRunInfo, NewsFilters, NewsItem } from "../api/types";
-import { messageFromError, useAsync } from "../hooks/useAsync";
-import { NewsCard } from "../components/NewsCard";
-import { Pagination } from "../components/Pagination";
+import type { CrawlerRunInfo, NewsItem } from "../api/types";
+import { FilterBar, type FilterField } from "../components/FilterBar";
+import { HelpTooltip } from "../components/HelpTooltip";
+import { ManualIcon } from "../components/icons";
+import { NewsGrid } from "../components/NewsGrid";
 import { RunSummary } from "../components/RunSummary";
 import { EmptyState, ErrorView, Loading } from "../components/StateViews";
+import { useAsync, messageFromError } from "../hooks/useAsync";
+import { useInfiniteNews } from "../hooks/useInfiniteNews";
+import { useI18n } from "../i18n/I18nProvider";
+import { paramsToNewsFilters } from "../lib/newsQuery";
 
-const SORT_OPTIONS = [
-  { value: "score", label: "Score (high to low)" },
-  { value: "newest", label: "Newest first" },
-  { value: "oldest", label: "Oldest first" }
+const RADAR_FIELDS: FilterField[] = [
+  "q",
+  "source",
+  "sourceType",
+  "topic",
+  "keyword",
+  "language",
+  "matchStrength",
+  "minScore",
+  "maxScore",
+  "savedState",
+  "publishedFrom",
+  "publishedTo",
+  "hasSummary",
+  "hasReasons",
+  "hasNegativePenalty",
+  "sort"
 ];
 
-interface FilterFormState {
-  q: string;
-  source: string;
-  topic: string;
-  language: string;
-  status: string;
-  saved: string;
-  minScore: string;
-  sort: string;
-}
+export function RadarPage() {
+  const { t } = useI18n();
+  const [searchParams] = useSearchParams();
+  const filters = paramsToNewsFilters(searchParams);
 
-const EMPTY_FILTERS: FilterFormState = {
-  q: "",
-  source: "",
-  topic: "",
-  language: "",
-  status: "",
-  saved: "",
-  minScore: "",
-  sort: "score"
-};
+  const news = useInfiniteNews(filters);
+  const latest = useAsync<{ data: CrawlerRunInfo | null }>(() => api.latestRun(), []);
+  const status = useAsync(() => api.getStatus(), []);
 
-export const RadarPage = () => {
-  const [form, setForm] = useState<FilterFormState>(EMPTY_FILTERS);
-  const [applied, setApplied] = useState<FilterFormState>(EMPTY_FILTERS);
-  const [page, setPage] = useState(1);
   const [running, setRunning] = useState(false);
   const [runResult, setRunResult] = useState<CrawlerRunInfo | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
 
-  const filters = useMemo<NewsFilters>(
-    () => ({
-      q: applied.q || undefined,
-      source: applied.source || undefined,
-      topic: applied.topic || undefined,
-      language: applied.language || undefined,
-      status: applied.status || undefined,
-      saved: applied.saved || undefined,
-      minScore: applied.minScore || undefined,
-      sort: applied.sort || undefined,
-      page,
-      limit: 20
-    }),
-    [applied, page]
-  );
+  const crawlerActive = status.data?.crawler.active ?? false;
 
-  const news = useAsync(() => api.listNews(filters), [filters]);
-  const latest = useAsync(() => api.latestRun(), []);
-
-  const updateItem = useCallback(
-    (next: NewsItem) => {
-      if (news.data) {
-        news.data.data = news.data.data.map((item) =>
-          item.id === next.id ? next : item
-        );
-      }
-    },
-    [news.data]
-  );
-
-  const onSave = async (item: NewsItem) => {
-    try {
-      updateItem(await api.saveNews(item.id));
-      news.reload();
-    } catch (cause) {
-      setRunError(messageFromError(cause));
-    }
-  };
-
-  const onUnsave = async (item: NewsItem) => {
-    try {
-      updateItem(await api.unsaveNews(item.id));
-      news.reload();
-    } catch (cause) {
-      setRunError(messageFromError(cause));
-    }
-  };
-
-  const applyFilters = () => {
-    setPage(1);
-    setApplied(form);
-  };
-
-  const resetFilters = () => {
-    setForm(EMPTY_FILTERS);
-    setApplied(EMPTY_FILTERS);
-    setPage(1);
-  };
-
-  const runCrawler = async () => {
+  const runCrawler = useCallback(async () => {
     setRunning(true);
     setRunError(null);
-    setRunResult(null);
     try {
-      const response = await api.runCrawler();
-      setRunResult(response.data);
-      news.reload();
+      const result = await api.runCrawler();
+      setRunResult(result.data);
+      news.refresh();
       latest.reload();
-    } catch (cause) {
-      setRunError(messageFromError(cause));
+      status.reload();
+    } catch (error) {
+      setRunError(messageFromError(error));
     } finally {
       setRunning(false);
     }
-  };
+  }, [news, latest, status]);
+
+  const onSave = useCallback(
+    async (item: NewsItem) => {
+      const updated = await api.saveNews(item.id);
+      news.updateItem(updated);
+    },
+    [news]
+  );
+
+  const onUnsave = useCallback(
+    async (item: NewsItem) => {
+      const updated = await api.unsaveNews(item.id);
+      news.updateItem(updated);
+    },
+    [news]
+  );
+
+  const summaryRun = runResult ?? latest.data?.data ?? null;
 
   return (
-    <div className="page">
-      <header className="page__header">
-        <div>
-          <h1>Radar</h1>
-          <p className="page__subtitle">
-            Deterministic signal ranking for open source and technology news.
-          </p>
+    <div className="section-stack">
+      <header className="page-header">
+        <div className="page-title-row">
+          <div>
+            <h1 className="page-title">{t("radar.title")}</h1>
+            <p className="page-subtitle">{t("radar.subtitle")}</p>
+          </div>
+          <div className="page-header-actions">
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={runCrawler}
+              disabled={running || crawlerActive}
+            >
+              <ManualIcon className="inline-icon" />
+              {running || crawlerActive ? t("actions.running") : t("actions.runCrawler")}
+            </button>
+            <HelpTooltip label={t("actions.runCrawler")} text={t("radar.manualHelp")} />
+          </div>
         </div>
-        <button
-          type="button"
-          className="btn btn--primary"
-          disabled={running}
-          onClick={runCrawler}
-        >
-          {running ? "Running crawler…" : "Run crawler and classification"}
-        </button>
       </header>
 
       {runError ? <ErrorView message={runError} /> : null}
-      {runResult ? (
-        <RunSummary run={runResult} title="Manual run result" />
-      ) : latest.data?.data ? (
-        <RunSummary run={latest.data.data} title="Latest crawler run" />
-      ) : null}
+      {summaryRun ? <RunSummary run={summaryRun} title={t("runs.latestRun")} /> : null}
 
-      <section className="filters">
-        <input
-          className="input"
-          placeholder="Search signals"
-          value={form.q}
-          onChange={(event) => setForm({ ...form, q: event.target.value })}
-        />
-        <input
-          className="input"
-          placeholder="Source id"
-          value={form.source}
-          onChange={(event) => setForm({ ...form, source: event.target.value })}
-        />
-        <input
-          className="input"
-          placeholder="Topic"
-          value={form.topic}
-          onChange={(event) => setForm({ ...form, topic: event.target.value })}
-        />
-        <select
-          className="input"
-          value={form.language}
-          onChange={(event) => setForm({ ...form, language: event.target.value })}
-        >
-          <option value="">All languages</option>
-          <option value="pt-BR">pt-BR</option>
-          <option value="en">en</option>
-        </select>
-        <input
-          className="input"
-          type="number"
-          min={0}
-          max={100}
-          placeholder="Min score"
-          value={form.minScore}
-          onChange={(event) => setForm({ ...form, minScore: event.target.value })}
-        />
-        <select
-          className="input"
-          value={form.saved}
-          onChange={(event) => setForm({ ...form, saved: event.target.value })}
-        >
-          <option value="">All items</option>
-          <option value="true">Saved only</option>
-          <option value="false">Unsaved only</option>
-        </select>
-        <select
-          className="input"
-          value={form.sort}
-          onChange={(event) => setForm({ ...form, sort: event.target.value })}
-        >
-          {SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <div className="filters__actions">
-          <button type="button" className="btn btn--accent" onClick={applyFilters}>
-            Apply
-          </button>
-          <button type="button" className="btn btn--ghost" onClick={resetFilters}>
-            Reset
-          </button>
+      <div className="radar-layout">
+        <div className="radar-main">
+          {news.loading ? (
+            <Loading />
+          ) : news.error && news.items.length === 0 ? (
+            <ErrorView message={news.error} onRetry={news.retry} />
+          ) : news.items.length === 0 ? (
+            <EmptyState message={t("radar.empty")} />
+          ) : (
+            <>
+              <NewsGrid items={news.items} onSave={onSave} onUnsave={onUnsave} />
+              <div ref={news.sentinelRef} className="sentinel" />
+              <div className="infinite-footer">
+                {news.loadingMore ? (
+                  <Loading />
+                ) : news.error ? (
+                  <ErrorView message={t("common.loadMoreError")} onRetry={news.retry} />
+                ) : !news.hasMore ? (
+                  <span className="dim">{t("common.endOfResults")}</span>
+                ) : null}
+              </div>
+            </>
+          )}
         </div>
-      </section>
-
-      {news.loading ? <Loading label="Loading signals" /> : null}
-      {news.error ? <ErrorView message={news.error} onRetry={news.reload} /> : null}
-
-      {news.data && !news.loading && !news.error ? (
-        news.data.data.length === 0 ? (
-          <EmptyState message="No news collected yet. Run the crawler to start collecting open source signals." />
-        ) : (
-          <>
-            <div className="news-list">
-              {news.data.data.map((item) => (
-                <NewsCard
-                  key={item.id}
-                  item={item}
-                  onSave={onSave}
-                  onUnsave={onUnsave}
-                />
-              ))}
-            </div>
-            <Pagination
-              page={news.data.page}
-              totalPages={news.data.totalPages}
-              onChange={setPage}
-            />
-          </>
-        )
-      ) : null}
+        <aside className="radar-aside">
+          <FilterBar fields={RADAR_FIELDS} variant="aside" />
+        </aside>
+      </div>
     </div>
   );
-};
+}
