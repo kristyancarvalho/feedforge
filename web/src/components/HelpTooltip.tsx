@@ -4,10 +4,11 @@ import { HelpIcon } from "./icons";
 interface HelpTooltipProps {
   text: string;
   label: string;
+  placement?: "top" | "bottom";
   children?: ReactNode;
 }
 
-export function HelpTooltip({ text, label }: HelpTooltipProps) {
+export function HelpTooltip({ text, label, placement = "top" }: HelpTooltipProps) {
   const [open, setOpen] = useState(false);
   const id = useId();
 
@@ -32,7 +33,7 @@ export function HelpTooltip({ text, label }: HelpTooltipProps) {
       >
         <HelpIcon />
       </button>
-      <span id={id} role="tooltip" className="help-tooltip-bubble" data-open={open}>
+      <span id={id} role="tooltip" className="help-tooltip-bubble" data-placement={placement} data-open={open}>
         {text}
       </span>
     </span>

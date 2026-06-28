@@ -430,6 +430,11 @@ h4 {
   pointer-events: none;
 }
 
+.help-tooltip-bubble[data-placement="bottom"] {
+  top: calc(100% + 8px);
+  bottom: auto;
+}
+
 .help-tooltip-bubble[data-open="true"] {
   opacity: 1;
   visibility: visible;

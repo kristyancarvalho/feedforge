@@ -23,7 +23,7 @@ export function OperationalStatus() {
     <span className="operational-status">
       <span className="status-dot" data-status={dotStatus} aria-hidden="true" />
       <span className="status-label">{t(`status.${state.error ? "offline" : status}`)}</span>
-      <HelpTooltip label={t("status.label")} text={description} />
+      <HelpTooltip label={t("status.label")} text={description} placement="bottom" />
     </span>
   );
 }
