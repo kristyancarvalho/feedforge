@@ -295,7 +295,16 @@ h4 {
   border-radius: var(--radius-2);
   background: var(--bg-elevated);
   color: var(--text);
+  white-space: nowrap;
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.button .inline-icon {
+  color: currentColor;
+}
+
+.button-nowrap {
+  white-space: nowrap;
 }
 
 .button:hover {

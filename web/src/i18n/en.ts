@@ -17,6 +17,8 @@ export const en = {
     unsave: "Unsave",
     details: "Details",
     openOriginal: "Open original",
+    openOriginalShort: "Original",
+    openOriginalA11y: "Open original news item",
     reloadSources: "Reload sources",
     runCrawler: "Run crawler and classification",
     running: "Running…",

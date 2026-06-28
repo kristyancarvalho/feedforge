@@ -75,9 +75,16 @@ export function NewsCard({ item, onSave, onUnsave, busy }: Props) {
         </ul>
       ) : null}
       <div className="news-card-actions">
-        <a className="button button-ghost" href={item.url} target="_blank" rel="noreferrer">
+        <a
+          className="button button-ghost button-nowrap"
+          href={item.url}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={t("actions.openOriginalA11y")}
+          title={t("actions.openOriginalA11y")}
+        >
           <ExternalLinkIcon className="inline-icon" />
-          {t("actions.openOriginal")}
+          {t("actions.openOriginalShort")}
         </a>
         <Link className="button button-ghost" to={`/news/${item.id}`}>
           <DetailsIcon className="inline-icon" />

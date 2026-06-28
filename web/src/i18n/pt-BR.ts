@@ -19,6 +19,8 @@ export const ptBR: Dictionary = {
     unsave: "Remover",
     details: "Detalhes",
     openOriginal: "Abrir original",
+    openOriginalShort: "Original",
+    openOriginalA11y: "Abrir notícia original",
     reloadSources: "Recarregar fontes",
     runCrawler: "Executar crawler e classificação",
     running: "Executando…",
