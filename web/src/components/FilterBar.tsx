@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SAVED_STATUSES, SORT_OPTIONS } from "../api/types";
 import { useI18n } from "../i18n/I18nProvider";
-import { FilterIcon } from "./icons";
+import { FilterIcon, SearchIcon } from "./icons";
 import { HelpTooltip } from "./HelpTooltip";
 
 export type FilterField =
@@ -49,9 +49,10 @@ const FIELD_TO_PARAM: Record<FilterField, string> = {
 type Props = {
   fields: FilterField[];
   locked?: Record<string, string>;
+  variant?: "inline" | "aside";
 };
 
-export function FilterBar({ fields, locked = {} }: Props) {
+export function FilterBar({ fields, locked = {}, variant = "inline" }: Props) {
   const { t } = useI18n();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -103,7 +104,7 @@ export function FilterBar({ fields, locked = {} }: Props) {
   }
 
   return (
-    <form className="filter-bar" onSubmit={apply}>
+    <form className={variant === "aside" ? "filter-bar filter-bar-aside" : "filter-bar"} onSubmit={apply}>
       <div className="filter-bar-head">
         <span className="filter-bar-title">
           <FilterIcon className="inline-icon" />
@@ -144,12 +145,32 @@ function Field({
   const { t } = useI18n();
   const param = FIELD_TO_PARAM[field];
   const label = t(`filters.${field}`);
+  const helpKey = `filters.help.${field}`;
+  const helpText = t(helpKey);
+  const help = helpText === helpKey ? undefined : helpText;
 
   const set = (next: string) => onChange(param, next);
 
+  if (field === "q") {
+    return (
+      <Wrapper label={label} help={help} full>
+        <span className="filter-search-field">
+          <SearchIcon className="filter-search-icon" />
+          <input
+            className="input filter-search"
+            type="search"
+            value={value}
+            placeholder={t("common.search")}
+            onChange={(e) => set(e.target.value)}
+          />
+        </span>
+      </Wrapper>
+    );
+  }
+
   if (field === "sourceType") {
     return (
-      <Wrapper label={label}>
+      <Wrapper label={label} help={help}>
         <select className="select" value={value} onChange={(e) => set(e.target.value)}>
           <option value="">{t("common.all")}</option>
           <option value="rss">{t("filters.typeRss")}</option>
@@ -161,7 +182,7 @@ function Field({
 
   if (field === "language") {
     return (
-      <Wrapper label={label}>
+      <Wrapper label={label} help={help}>
         <select className="select" value={value} onChange={(e) => set(e.target.value)}>
           <option value="">{t("common.all")}</option>
           <option value="en">English</option>
@@ -173,7 +194,7 @@ function Field({
 
   if (field === "matchStrength") {
     return (
-      <Wrapper label={label}>
+      <Wrapper label={label} help={help}>
         <select className="select" value={value} onChange={(e) => set(e.target.value)}>
           <option value="">{t("common.all")}</option>
           <option value="strong">{t("matchStrength.strong")}</option>
@@ -187,7 +208,7 @@ function Field({
 
   if (field === "sort") {
     return (
-      <Wrapper label={label}>
+      <Wrapper label={label} help={help}>
         <select className="select" value={value} onChange={(e) => set(e.target.value)}>
           {SORT_OPTIONS.map((option) => (
             <option key={option} value={option}>
@@ -201,7 +222,7 @@ function Field({
 
   if (field === "savedState") {
     return (
-      <Wrapper label={label}>
+      <Wrapper label={label} help={help}>
         <select className="select" value={value} onChange={(e) => set(e.target.value)}>
           <option value="">{t("common.all")}</option>
           <option value="true">{t("filters.savedOnly")}</option>
@@ -213,7 +234,7 @@ function Field({
 
   if (field === "savedStatus") {
     return (
-      <Wrapper label={label}>
+      <Wrapper label={label} help={help}>
         <select className="select" value={value} onChange={(e) => set(e.target.value)}>
           <option value="">{t("common.all")}</option>
           {SAVED_STATUSES.map((status) => (
@@ -228,7 +249,7 @@ function Field({
 
   if (field === "hasSummary" || field === "hasReasons" || field === "hasNegativePenalty") {
     return (
-      <Wrapper label={label}>
+      <Wrapper label={label} help={help}>
         <select className="select" value={value} onChange={(e) => set(e.target.value)}>
           <option value="">{t("common.all")}</option>
           <option value="true">{t("common.yes")}</option>
@@ -240,7 +261,7 @@ function Field({
 
   if (field === "minScore" || field === "maxScore") {
     return (
-      <Wrapper label={label}>
+      <Wrapper label={label} help={help}>
         <input
           className="input"
           type="number"
@@ -255,22 +276,32 @@ function Field({
 
   if (field === "publishedFrom" || field === "publishedTo") {
     return (
-      <Wrapper label={label}>
+      <Wrapper label={label} help={help}>
         <input className="input" type="date" value={value} onChange={(e) => set(e.target.value)} />
       </Wrapper>
     );
   }
 
   return (
-    <Wrapper label={label}>
+    <Wrapper label={label} help={help}>
       <input className="input" type="text" value={value} onChange={(e) => set(e.target.value)} />
     </Wrapper>
   );
 }
 
-function Wrapper({ label, children, help }: { label: string; children: React.ReactNode; help?: string }) {
+function Wrapper({
+  label,
+  children,
+  help,
+  full = false
+}: {
+  label: string;
+  children: React.ReactNode;
+  help?: string;
+  full?: boolean;
+}) {
   return (
-    <label className="filter-field">
+    <label className={full ? "filter-field filter-field-full" : "filter-field"}>
       <span className="filter-label">
         {label}
         {help ? <HelpTooltip label={label} text={help} /> : null}

@@ -133,7 +133,27 @@ export const ptBR: Dictionary = {
     savedOnly: "Apenas salvos",
     notSaved: "Não salvos",
     typeRss: "RSS",
-    typeHtml: "HTML"
+    typeHtml: "HTML",
+    help: {
+      q: "Busca em texto completo por títulos e resumos.",
+      source: "Filtrar pelo identificador ou nome da fonte.",
+      sourceType: "Filtrar pelo tipo de ingestão: RSS ou HTML.",
+      topic: "Filtrar por um tópico editorial detectado.",
+      keyword: "Filtrar por uma palavra-chave open source correspondente.",
+      language: "Filtrar pelo idioma do item.",
+      minScore: "Mostrar apenas itens com pontuação final igual ou acima deste valor.",
+      maxScore: "Mostrar apenas itens com pontuação final igual ou abaixo deste valor.",
+      matchStrength: "Filtrar pela faixa legível de força de correspondência.",
+      savedState: "Filtrar por itens salvos ou não.",
+      savedStatus: "Filtrar pelo status do fluxo editorial.",
+      publishedFrom: "Mostrar apenas itens publicados a partir desta data.",
+      publishedTo: "Mostrar apenas itens publicados até esta data.",
+      runId: "Filtrar pela execução do crawler que viu o item por último.",
+      hasSummary: "Mostrar apenas itens que têm resumo.",
+      hasReasons: "Mostrar apenas itens com motivos de classificação.",
+      hasNegativePenalty: "Mostrar apenas itens que receberam penalidade negativa.",
+      sort: "Escolher a ordenação dos resultados."
+    }
   },
   sort: {
     score_desc: "Pontuação (maior para menor)",

@@ -131,7 +131,27 @@ export const en = {
     savedOnly: "Saved only",
     notSaved: "Not saved",
     typeRss: "RSS",
-    typeHtml: "HTML"
+    typeHtml: "HTML",
+    help: {
+      q: "Full-text search across titles and summaries.",
+      source: "Filter by the source identifier or name.",
+      sourceType: "Filter by ingestion type: RSS or HTML.",
+      topic: "Filter by a detected editorial topic.",
+      keyword: "Filter by a matched open source keyword.",
+      language: "Filter by item language.",
+      minScore: "Only show items at or above this final score.",
+      maxScore: "Only show items at or below this final score.",
+      matchStrength: "Filter by the readable match-strength band.",
+      savedState: "Filter by whether items are saved.",
+      savedStatus: "Filter by editorial workflow status.",
+      publishedFrom: "Only show items published on or after this date.",
+      publishedTo: "Only show items published on or before this date.",
+      runId: "Filter by the crawler run that last saw the item.",
+      hasSummary: "Only show items that have a summary.",
+      hasReasons: "Only show items with classification reasons.",
+      hasNegativePenalty: "Only show items that received a negative penalty.",
+      sort: "Choose how results are ordered."
+    }
   },
   sort: {
     score_desc: "Score (high to low)",
