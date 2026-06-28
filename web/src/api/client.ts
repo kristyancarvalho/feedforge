@@ -1,23 +1,21 @@
 import type {
   CrawlerRunInfo,
+  NewsCursorResult,
   NewsFilters,
   NewsItem,
   PaginatedResult,
+  RunFilters,
   SourceHealth,
-  SourceSyncResult
+  SourceSyncResult,
+  StatusInfo
 } from "./types";
 
 export class ApiError extends Error {
-  readonly code: string;
-  readonly status: number;
-  readonly details: Record<string, unknown>;
+  code: string;
+  status: number;
+  details: unknown;
 
-  constructor(
-    code: string,
-    message: string,
-    status: number,
-    details: Record<string, unknown> = {}
-  ) {
+  constructor(code: string, message: string, status: number, details?: unknown) {
     super(message);
     this.name = "ApiError";
     this.code = code;
@@ -26,83 +24,95 @@ export class ApiError extends Error {
   }
 }
 
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const headers: Record<string, string> = {
-    ...((init?.headers as Record<string, string>) ?? {})
-  };
-  if (init?.body !== undefined) {
+export function buildQuery(filters: Record<string, string | undefined>): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== null && value !== "") {
+      params.set(key, value);
+    }
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {};
+  if (init?.body) {
     headers["content-type"] = "application/json";
   }
 
   let response: Response;
   try {
-    response = await fetch(path, { ...init, headers });
+    response = await fetch(path, { ...init, headers: { ...headers, ...(init?.headers ?? {}) } });
   } catch (error) {
-    throw new ApiError(
-      "NETWORK_ERROR",
-      error instanceof Error ? error.message : "Network request failed.",
-      0
-    );
+    throw new ApiError("NETWORK_ERROR", "Could not reach the server.", 0, error);
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  let payload: unknown = null;
   const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
+  if (text) {
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      payload = null;
+    }
+  }
 
   if (!response.ok) {
-    const errorBody = payload?.error;
+    const errorBody = (payload as { error?: { code?: string; message?: string; details?: unknown } } | null)?.error;
     throw new ApiError(
-      errorBody?.code ?? "INTERNAL_ERROR",
-      errorBody?.message ?? "Request failed.",
+      errorBody?.code ?? "REQUEST_FAILED",
+      errorBody?.message ?? "The request failed.",
       response.status,
-      errorBody?.details ?? {}
+      errorBody?.details
     );
   }
 
   return payload as T;
-};
-
-const buildQuery = (filters: NewsFilters): string => {
-  const params = new URLSearchParams();
-  const entries = Object.entries(filters) as [keyof NewsFilters, unknown][];
-  for (const [key, value] of entries) {
-    if (value === undefined || value === null || value === "") {
-      continue;
-    }
-    params.set(key, String(value));
-  }
-  const query = params.toString();
-  return query ? `?${query}` : "";
-};
+}
 
 export const api = {
-  listNews: (filters: NewsFilters = {}): Promise<PaginatedResult<NewsItem>> =>
-    request(`/api/news${buildQuery(filters)}`),
-
-  getNews: (id: string): Promise<NewsItem> => request(`/api/news/${id}`),
-
-  saveNews: (id: string): Promise<NewsItem> =>
-    request(`/api/news/${id}/save`, { method: "POST" }),
-
-  unsaveNews: (id: string): Promise<NewsItem> =>
-    request(`/api/news/${id}/save`, { method: "DELETE" }),
-
-  updateStatus: (id: string, status: string, notes?: string): Promise<NewsItem> =>
-    request(`/api/news/${id}/status`, {
+  listNews(filters: NewsFilters): Promise<NewsCursorResult> {
+    return request<NewsCursorResult>(`/api/news${buildQuery(filters as Record<string, string | undefined>)}`);
+  },
+  getNews(id: string): Promise<NewsItem> {
+    return request<NewsItem>(`/api/news/${encodeURIComponent(id)}`);
+  },
+  saveNews(id: string): Promise<NewsItem> {
+    return request<NewsItem>(`/api/news/${encodeURIComponent(id)}/save`, { method: "POST" });
+  },
+  unsaveNews(id: string): Promise<NewsItem> {
+    return request<NewsItem>(`/api/news/${encodeURIComponent(id)}/save`, { method: "DELETE" });
+  },
+  updateStatus(id: string, status: string, notes?: string): Promise<NewsItem> {
+    const body = notes === undefined ? { status } : { status, notes };
+    return request<NewsItem>(`/api/news/${encodeURIComponent(id)}/status`, {
       method: "PATCH",
-      body: JSON.stringify(notes === undefined ? { status } : { status, notes })
-    }),
-
-  listSources: (): Promise<{ data: SourceHealth[] }> => request(`/api/sources`),
-
-  reloadSources: (): Promise<SourceSyncResult> =>
-    request(`/api/sources/reload`, { method: "POST" }),
-
-  listRuns: (page = 1, limit = 20): Promise<PaginatedResult<CrawlerRunInfo>> =>
-    request(`/api/runs?page=${page}&limit=${limit}`),
-
-  latestRun: (): Promise<{ data: CrawlerRunInfo | null }> =>
-    request(`/api/runs/latest`),
-
-  runCrawler: (): Promise<{ data: CrawlerRunInfo }> =>
-    request(`/api/crawler/run`, { method: "POST" })
+      body: JSON.stringify(body)
+    });
+  },
+  listSources(): Promise<{ data: SourceHealth[] }> {
+    return request<{ data: SourceHealth[] }>("/api/sources");
+  },
+  reloadSources(): Promise<{ data: SourceSyncResult }> {
+    return request<{ data: SourceSyncResult }>("/api/sources/reload", { method: "POST" });
+  },
+  listRuns(filters: RunFilters): Promise<PaginatedResult<CrawlerRunInfo>> {
+    return request<PaginatedResult<CrawlerRunInfo>>(
+      `/api/runs${buildQuery(filters as Record<string, string | undefined>)}`
+    );
+  },
+  latestRun(): Promise<{ data: CrawlerRunInfo | null }> {
+    return request<{ data: CrawlerRunInfo | null }>("/api/runs/latest");
+  },
+  runCrawler(): Promise<{ data: CrawlerRunInfo }> {
+    return request<{ data: CrawlerRunInfo }>("/api/crawler/run", { method: "POST" });
+  },
+  getStatus(): Promise<StatusInfo> {
+    return request<StatusInfo>("/api/status");
+  }
 };
