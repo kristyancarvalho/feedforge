@@ -9,33 +9,33 @@ const links = [
 
 export const Layout = () => (
   <div className="layout">
-    <aside className="sidebar">
-      <div className="sidebar__brand">
-        <span className="sidebar__logo">FF</span>
-        <div>
+    <header className="topbar">
+      <div className="topbar__brand">
+        <span className="topbar__logo">FF</span>
+        <div className="topbar__title">
           <strong>FeedForge</strong>
           <small>Open Source Radar</small>
         </div>
       </div>
-      <nav className="sidebar__nav">
+      <nav className="topbar__nav">
         {links.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
             end={link.end}
             className={({ isActive }) =>
-              isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
+              isActive ? "topbar__link topbar__link--active" : "topbar__link"
             }
           >
             {link.label}
           </NavLink>
         ))}
       </nav>
-      <div className="sidebar__footer">
+      <div className="topbar__meta">
         <span>Deterministic. Local-first.</span>
         <span>No LLMs.</span>
       </div>
-    </aside>
+    </header>
     <main className="content">
       <Outlet />
     </main>
