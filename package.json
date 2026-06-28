@@ -1,6 +1,6 @@
 {
   "name": "feedforge",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Local-first editorial radar for open source and technology news.",
   "private": true,
   "type": "module",
