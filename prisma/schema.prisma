@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Source {
+  id            String     @id
+  name          String
+  type          String
+  url           String
+  language      String
+  tags          String[]
+  weight        Float
+  enabled       Boolean    @default(true)
+  lastRunAt     DateTime?
+  lastSuccessAt DateTime?
+  lastError     String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  newsItems     NewsItem[]
+
+  @@index([enabled])
+}
+
+model NewsItem {
+  id             String          @id @default(cuid())
+  sourceId       String
+  title          String
+  url            String
+  canonicalUrl   String?         @unique
+  normalizedUrl  String?
+  author         String?
+  summary        String?
+  contentText    String?
+  language       String
+  publishedAt    DateTime?
+  dateInferred   Boolean         @default(false)
+  fingerprint    String
+  rawPayload     Json?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  source         Source          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  classification Classification?
+  savedNews      SavedNews?
+
+  @@index([fingerprint])
+  @@index([publishedAt])
+  @@index([sourceId])
+  @@index([normalizedUrl])
+}
+
+model Classification {
+  id              String   @id @default(cuid())
+  newsItemId      String   @unique
+  finalScore      Float
+  topicScore      Float
+  keywordScore    Float
+  sourceScore     Float
+  freshnessScore  Float
+  noveltyScore    Float
+  negativePenalty Float
+  detectedTopics  String[]
+  matchedKeywords String[]
+  reasons         String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  newsItem        NewsItem @relation(fields: [newsItemId], references: [id], onDelete: Cascade)
+
+  @@index([finalScore])
+}
+
+model SavedNews {
+  id         String   @id @default(cuid())
+  newsItemId String   @unique
+  status     String   @default("saved")
+  notes      String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  newsItem   NewsItem @relation(fields: [newsItemId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model CrawlerRun {
+  id                String    @id @default(cuid())
+  trigger           String
+  status            String
+  startedAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  totalSources      Int       @default(0)
+  successfulSources Int       @default(0)
+  failedSources     Int       @default(0)
+  itemsFound        Int       @default(0)
+  itemsCreated      Int       @default(0)
+  itemsUpdated      Int       @default(0)
+  itemsSkipped      Int       @default(0)
+  errorMessage      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([startedAt])
+}
