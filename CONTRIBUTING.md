@@ -1,162 +1,56 @@
 # Contributing to FeedForge
 
-FeedForge is a local-first editorial radar for open source and technology news.
+Thanks for your interest in contributing to FeedForge.
 
-The project is intentionally simple: a modular monolith, Docker-orchestrated, with deterministic classification, no LLMs, no paid APIs, and no unnecessary infrastructure.
+FeedForge is a local-first editorial radar for open source and technology news. It collects news from configured sources, ranks them with transparent deterministic scoring, and helps technical writers and open source enthusiasts find useful signal without depending on paid APIs or cloud services.
 
-This document defines the development workflow, versioning rules, commit conventions, implementation standards, and project constraints.
+This guide explains how to work on the project, open issues, submit pull requests, and keep changes aligned with the project direction.
 
-## Core Principles
+## Ways to Contribute
 
-FeedForge must stay:
+Contributions are welcome in many forms:
 
-* local-first;
-* simple to run;
-* easy to maintain;
-* focused on open source news;
-* deterministic and explainable;
-* Docker-first;
-* free from unnecessary abstractions;
-* free from LLM-based features.
+* bug reports and reproduction cases;
+* documentation improvements;
+* source configuration fixes;
+* accessibility, usability, and responsive UI improvements;
+* tests and test infrastructure improvements;
+* small refactors that make the code easier to maintain;
+* feature proposals that fit the local-first editorial radar scope.
 
-Avoid scope creep.
+For larger changes, please open an issue first so the direction can be discussed before significant implementation work starts.
 
-Do not turn FeedForge into a generic RSS reader, social media tracker, AI assistant, or multi-user SaaS.
+## Project Direction
 
-## Hard Rules
+FeedForge should stay focused, understandable, and easy to run locally.
 
-These rules are mandatory.
+The project generally favors:
 
-### Do Not Run Node or npm on Bare Metal
+* local-first workflows;
+* Docker-friendly development;
+* RSS/Atom before HTML scraping;
+* explicit source configuration;
+* deterministic and explainable scoring;
+* simple architecture over distributed infrastructure;
+* Portuguese and English open source and technology sources.
 
-Node.js and npm commands must never be executed directly on the host machine.
+Ideas outside that direction are still welcome as issues or discussions, but they may be better suited for plugins, forks, or future optional integrations instead of the core application.
 
-Do not run commands like:
+## Development Setup
 
-```bash
-npm install
-npm run dev
-npm test
-npm run build
-node script.js
-npx prisma generate
-npx prisma migrate dev
-```
-
-directly on bare metal.
-
-All Node.js, npm, Prisma, test, build, and development commands must run inside Docker.
-
-Use Docker Compose commands instead.
-
-Examples:
-
-```bash
-docker compose run --rm app npm install
-docker compose run --rm app npm test
-docker compose run --rm app npm run build
-docker compose run --rm app npx prisma generate
-docker compose run --rm app npx prisma migrate dev
-docker compose up --build
-```
-
-If the Docker service name changes, adapt the command to the actual service name, but keep the same rule: Node.js and npm must run only inside Docker.
-
-### No Comments in Final Code
-
-The final source code must not contain comments.
-
-Avoid:
-
-```ts
-// comments
-/* comments */
-```
-
-Do not leave explanatory comments, TODO comments, FIXME comments, disabled code, commented-out experiments, or temporary notes in source files.
-
-The code must be readable through clear naming, small functions, typed boundaries, and simple structure.
-
-Documentation belongs in Markdown files, not in code comments.
-
-### No TODO Placeholders
-
-Do not leave placeholder implementations.
-
-Avoid:
-
-```txt
-TODO
-FIXME
-later
-temporary
-mock for now
-not implemented yet
-```
-
-If a feature is in scope, implement it.
-
-If a feature is out of scope, do not add a placeholder for it.
-
-### No LLM Features
-
-Do not add LLMs, AI summarization, AI recommendations, LangChain, OpenAI, Anthropic, Gemini, Ollama, local model inference, prompt templates, or model-based classification.
-
-FeedForge classification must remain deterministic and explainable.
-
-### No X/Twitter Integration
-
-Do not add X/Twitter integration.
-
-FeedForge focuses on configured news sources, RSS/Atom, and explicit HTML sources.
-
-### Prefer RSS/Atom
-
-RSS/Atom must be preferred whenever possible.
-
-HTML scraping is allowed only for sources explicitly configured as `html` in `sources.json`.
-
-Do not build a recursive crawler.
-
-Do not crawl arbitrary links.
-
-Do not scrape sources that require login.
-
-### Supported Source Languages
-
-Default sources must be available in:
-
-* Portuguese;
-* English.
-
-Allowed source language values:
-
-```txt
-pt-BR
-en
-```
-
-Do not seed default sources in other languages.
-
-## Development Environment
-
-The project must be developed through Docker Compose.
-
-The expected command to start the full application is:
+Docker Compose is the documented and maintainer-supported way to run the full app:
 
 ```bash
 docker compose up --build
 ```
 
-The expected app URL is:
+The app is expected to be available at:
 
 ```txt
 http://localhost:3000
 ```
 
-All development commands should use Docker Compose.
-
-Examples:
+Common commands:
 
 ```bash
 docker compose run --rm app npm test
@@ -166,680 +60,148 @@ docker compose run --rm app npx prisma generate
 docker compose run --rm app npx prisma migrate dev
 ```
 
-Do not require globally installed Node.js, npm, pnpm, yarn, Prisma, Vite, Vitest, or other JavaScript tooling on the host machine.
+If you prefer a local Node.js workflow, use the Node version documented by the project, keep generated files out of commits unless they are expected, and make sure the Docker Compose workflow still passes before opening a pull request.
 
-## Repository Structure
+## Repository Notes
 
-The initial repository structure is:
-
-```txt
-.
-├── CONTRIBUTING.md
-├── README.md
-└── specs
-    └── SPEC.md
-```
-
-The implementation must evolve from the specification in:
-
-```txt
-./specs/SPEC.md
-```
-
-Before implementing, read:
+The product scope is documented in:
 
 ```txt
 ./README.md
-./CONTRIBUTING.md
-./specs/SPEC.md
 ```
 
-The specification is the source of truth for product scope.
+When in doubt, prefer the current product behavior and documented scope over adding broad new platform features. If the implementation and documentation disagree, please call that out in the issue or pull request.
 
-If implementation details conflict with the spec, prefer the spec unless this contributing guide defines a stricter development rule.
+## Working Guidelines
 
-## Branching Strategy
+Please keep changes focused and easy to review.
 
-Use a simple branch model.
+Recommended practices:
 
-### `main`
+* prefer small pull requests over large mixed changes;
+* include tests for behavior changes when practical;
+* keep public errors and validation messages clear;
+* update documentation when setup, configuration, or user-facing behavior changes;
+* use typed boundaries and descriptive names;
+* leave comments only when they clarify non-obvious decisions;
+* avoid committing dead code, temporary debug output, or unfinished placeholder behavior.
 
-The `main` branch must represent stable, releasable code.
+FeedForge intentionally avoids unnecessary infrastructure and opaque ranking logic. New dependencies are fine when they solve a real problem, but please explain the tradeoff in the pull request.
 
-Only merge into `main` when:
+## Source Ingestion Guidelines
 
-* tests pass;
-* the app builds;
-* Docker Compose works;
-* the implemented scope is documented;
-* the code follows this contributing guide.
+FeedForge is RSS/Atom-first.
 
-### `dev`
+Use RSS or Atom feeds whenever a source provides a reliable feed. HTML ingestion is acceptable for explicitly configured sources when no usable feed exists.
 
-The `dev` branch is the active development branch.
+Please avoid adding sources that:
 
-Feature work should target `dev`.
+* require login;
+* depend on paid APIs;
+* mostly publish unrelated business, sports, celebrity, gaming, or price-speculation content;
+* require broad recursive crawling.
 
-When the project reaches a releasable state, merge `dev` into `main`.
-
-### Feature Branches
-
-For larger changes, use feature branches from `dev`.
-
-Recommended naming:
-
-```txt
-feat/source-ingestion
-feat/classification-engine
-feat/radar-dashboard
-fix/crawler-run-lock
-test/scoring-pipeline
-docs/docker-usage
-```
-
-Keep branches focused.
-
-Avoid mixing unrelated changes in the same branch.
-
-## Versioning
-
-Use Semantic Versioning.
-
-Format:
-
-```txt
-MAJOR.MINOR.PATCH
-```
-
-Example:
-
-```txt
-1.0.0
-```
-
-### Patch Version
-
-Increment PATCH for:
-
-* bug fixes;
-* documentation corrections;
-* small internal refactors;
-* test fixes;
-* small UI fixes that do not change product behavior.
-
-Example:
-
-```txt
-1.0.1
-```
-
-### Minor Version
-
-Increment MINOR for:
-
-* new features;
-* new pages;
-* new source types;
-* new classification capabilities;
-* new workflow states;
-* new configuration options;
-* meaningful UI additions.
-
-Example:
-
-```txt
-1.1.0
-```
-
-### Major Version
-
-Increment MAJOR for:
-
-* breaking configuration changes;
-* database model changes requiring manual migration;
-* removal of existing functionality;
-* incompatible API changes;
-* major architecture changes.
-
-Example:
-
-```txt
-2.0.0
-```
-
-## Milestones
-
-Use GitHub milestones to group work by release.
-
-Milestone naming should follow the version number:
-
-```txt
-0.1.0
-0.2.0
-1.0.0
-```
-
-Each milestone should include a clear goal.
-
-Example:
-
-```txt
-1.0.0 — Complete local-first FeedForge release
-```
-
-A release milestone should only be closed when all associated issues are closed and the release has been validated.
-
-## Issues
-
-Use GitHub issues for planned work.
-
-Each issue should be scoped, actionable, and tied to a milestone when possible.
-
-Issue titles should follow this style:
-
-```txt
-feat: implement RSS ingestion
-feat: add deterministic classification
-feat: build radar dashboard
-fix: prevent concurrent crawler runs
-test: cover scoring pipeline
-docs: document Docker workflow
-```
-
-Each issue should include:
-
-* context;
-* implementation tasks;
-* acceptance criteria;
-* testing notes when relevant.
-
-Avoid vague issues like:
-
-```txt
-improve app
-fix things
-make better
-```
-
-## Labels
-
-Use labels consistently.
-
-Recommended labels:
-
-```txt
-type: feat
-type: fix
-type: chore
-type: docs
-type: test
-type: refactor
-type: ci
-area: backend
-area: frontend
-area: crawler
-area: classification
-area: database
-area: docker
-area: docs
-priority: low
-priority: medium
-priority: high
-status: blocked
-status: ready
-```
-
-Labels should help identify the type, area, and priority of each issue.
-
-## Commit Convention
-
-Use concise conventional commits.
-
-Format:
-
-```txt
-type(scope): message
-```
-
-Examples:
-
-```txt
-feat(crawler): implement rss ingestion
-feat(classification): add deterministic scoring
-feat(web): build radar page
-fix(crawler): prevent concurrent runs
-test(classification): cover negative topic penalty
-docs(readme): document docker setup
-chore(docker): add compose services
-```
-
-Allowed types:
-
-```txt
-feat
-fix
-chore
-docs
-test
-refactor
-ci
-build
-style
-perf
-release
-```
-
-Recommended scopes:
-
-```txt
-crawler
-classification
-sources
-news
-saved-news
-runs
-web
-api
-db
-docker
-docs
-tests
-config
-```
-
-Commit messages should be:
-
-* lowercase;
-* imperative;
-* short;
-* specific.
-
-Avoid:
-
-```txt
-update
-changes
-fix
-wip
-stuff
-final
-```
-
-Good examples:
-
-```txt
-feat(sources): validate source configuration
-feat(crawler): add html ingestion service
-feat(news): add saved news workflow
-fix(api): return structured errors
-test(crawler): cover run status calculation
-docs(contributing): add docker-only workflow
-```
-
-## Pull Requests
-
-Pull requests should target `dev` unless preparing a release into `main`.
-
-A pull request should include:
-
-* summary of changes;
-* related issues;
-* test results;
-* screenshots for UI changes when useful;
-* notes about migrations or configuration changes.
-
-Before opening a PR, run the relevant commands through Docker:
-
-```bash
-docker compose run --rm app npm test
-docker compose run --rm app npm run build
-```
-
-Do not merge broken builds.
-
-## Release Process
-
-When preparing a release:
-
-1. Ensure all milestone issues are closed.
-2. Ensure `dev` is passing tests.
-3. Run tests inside Docker.
-4. Run build inside Docker.
-5. Start the app with Docker Compose.
-6. Validate the main workflows manually.
-7. Update README if needed.
-8. Update version number.
-9. Merge `dev` into `main`.
-10. Create a Git tag.
-11. Publish the GitHub release.
-
-Tag format:
-
-```txt
-vMAJOR.MINOR.PATCH
-```
-
-Example:
-
-```txt
-v1.0.0
-```
-
-Release commit format:
-
-```txt
-release: v1.0.0
-```
-
-## Required Validation Before Release
-
-Before a release, validate:
-
-* Docker Compose starts successfully;
-* database starts successfully;
-* migrations run successfully;
-* `sources.json` loads successfully;
-* RSS ingestion works;
-* HTML ingestion works for explicitly configured sources;
-* manual crawler button works;
-* cron is configured and does not overlap runs;
-* news are classified;
-* saved news works;
-* status updates work;
-* run history is visible;
-* source health is visible;
-* tests pass;
-* build passes;
-* README is accurate.
-
-All validation commands must run inside Docker.
-
-## Code Style
-
-Code must be:
-
-* typed;
-* modular;
-* simple;
-* explicit;
-* easy to test;
-* easy to delete;
-* aligned with the specification.
-
-Prefer:
-
-* clear names;
-* small modules;
-* explicit validation;
-* structured errors;
-* deterministic behavior;
-* simple data flow.
-
-Avoid:
-
-* clever abstractions;
-* hidden side effects;
-* global mutable state when avoidable;
-* duplicated pipeline logic;
-* unnecessary dependencies;
-* premature optimization;
-* framework churn.
-
-## Backend Guidelines
-
-Backend code should follow modular monolith boundaries.
-
-Expected modules include:
-
-```txt
-sources
-crawler
-ingestion
-normalization
-deduplication
-classification
-news
-saved-news
-runs
-```
-
-The manual run endpoint and cron job must share the same pipeline service.
-
-Do not duplicate crawler logic.
-
-Do not let one failed source crash the whole run.
-
-All API errors should be structured.
-
-Example:
-
-```json
-{
-  "error": {
-    "code": "CRAWLER_ALREADY_RUNNING",
-    "message": "A crawler run is already active.",
-    "details": {}
-  }
-}
-```
-
-## Frontend Guidelines
-
-The SPA should be clean, dense, and useful.
-
-Required pages:
-
-```txt
-Radar
-News Detail
-Saved News
-Sources
-Runs
-```
-
-The UI should be:
-
-* dark mode first;
-* technical;
-* readable;
-* responsive;
-* fast;
-* direct.
-
-Avoid fake AI language.
-
-Avoid excessive animations.
-
-Avoid generic SaaS bloat.
-
-## Testing Guidelines
-
-Use tests for core logic.
-
-Tests must cover at least:
-
-* source validation;
-* RSS parsing;
-* HTML parsing;
-* text normalization;
-* URL normalization;
-* fingerprint generation;
-* deduplication;
-* topic matching;
-* keyword matching;
-* source scoring;
-* freshness scoring;
-* negative topic penalty;
-* final score calculation;
-* classification reasons;
-* run status calculation;
-* saved status validation.
-
-Tests must not depend on live external websites.
-
-Mock network calls.
-
-Run tests only through Docker:
-
-```bash
-docker compose run --rm app npm test
-```
-
-## Documentation Guidelines
-
-Keep documentation accurate.
-
-Update README when changing:
-
-* setup;
-* Docker commands;
-* environment variables;
-* source configuration;
-* cron behavior;
-* classification behavior;
-* API behavior;
-* release process.
-
-Documentation should explain why FeedForge avoids LLMs and why it prefers RSS/Atom.
-
-## Dependency Guidelines
-
-Add dependencies only when needed.
-
-Before adding a dependency, check if the feature can be implemented simply with existing tools.
-
-Do not add:
-
-```txt
-LangChain
-OpenAI SDK
-Anthropic SDK
-Gemini SDK
-Ollama client
-robots-parser
-browser automation libraries
-paid API SDKs
-```
-
-Allowed dependency categories include:
-
-```txt
-Fastify
-React
-Vite
-Prisma
-Zod
-rss-parser
-undici
-cheerio
-node-cron
-Vitest
-```
-
-## Database Guidelines
-
-Use Prisma migrations.
-
-Database changes should be intentional and documented.
-
-Add indexes for common queries:
-
-```txt
-canonicalUrl
-fingerprint
-publishedAt
-sourceId
-finalScore
-saved status
-crawler run start date
-```
-
-Do not introduce database changes without updating tests and documentation when needed.
-
-## Configuration Guidelines
-
-Configuration should be explicit.
-
-Important files:
-
-```txt
-.env.example
-sources.json
-compose.yaml
-```
-
-Validate configuration at startup.
-
-Invalid configuration should produce clear errors.
-
-Do not silently ignore invalid source definitions.
-
-## Source Configuration Guidelines
-
-Default sources must be focused on:
-
-* open source;
-* Linux;
-* software security;
-* developer tools;
-* GitHub;
-* programming languages;
-* infrastructure;
-* self-hosting;
-* privacy;
-* Brazilian Linux and open source communities;
-* international open source communities.
-
-Allowed source languages:
+Default source language values are currently:
 
 ```txt
 pt-BR
 en
 ```
 
-Prefer RSS/Atom.
+## Branching
 
-Use HTML only when explicitly configured.
+Use a simple branch model:
 
-Do not include sources that require login.
+* `main` is stable, releasable code.
+* `dev` is the default branch for active development.
+* Feature branches should be created from `dev` when practical.
 
-Do not include paid APIs.
+Example branch names:
 
-Do not include X/Twitter.
+```txt
+feat/source-ingestion
+feat/classification-engine
+fix/crawler-run-lock
+docs/docker-usage
+test/scoring-pipeline
+```
 
-## Final Quality Checklist
+Pull requests should normally target `dev`, except release preparation pull requests into `main`.
 
-Before considering work complete, confirm:
+## Issues
 
-* code has no comments;
-* code has no TODO placeholders;
-* Node.js and npm were only used through Docker;
-* tests pass through Docker;
-* build passes through Docker;
-* Docker Compose starts the app;
-* `sources.json` validates;
-* RSS ingestion works;
-* explicit HTML ingestion works;
-* classification works without LLMs;
-* manual crawler button works;
-* cron uses the same pipeline;
-* saved news works;
-* source health is visible;
-* run history is visible;
-* README is updated;
-* implementation matches `./specs/SPEC.md`.
+Good issues are scoped and actionable.
 
-## Project Philosophy
+Helpful issue reports usually include:
 
-FeedForge should remain boring in the best way.
+* what happened;
+* what you expected to happen;
+* steps to reproduce;
+* logs, screenshots, or sample source entries when useful;
+* environment details such as OS, Docker version, and browser.
 
-It should collect, classify, and organize open source news reliably.
+Feature requests are easier to evaluate when they explain the use case, not only the proposed implementation.
 
-Every score should be explainable.
+## Commits
 
-Every source should be explicit.
+Conventional commits are recommended but not required for every contribution.
 
-Every command should be reproducible through Docker.
+Examples:
 
-The project should be useful for real technical writing, not just a demo.
+```txt
+feat(crawler): add rss ingestion
+fix(api): return structured validation errors
+docs(readme): update docker setup
+test(classification): cover negative topic penalty
+refactor(sources): simplify source validation
+```
 
+Useful commit messages are short, specific, and written in the imperative mood.
+
+## Pull Requests
+
+Before opening a pull request, please check:
+
+* the change is focused;
+* related docs are updated;
+* relevant tests pass;
+* the app still builds;
+* UI changes include screenshots or a short visual note when useful;
+* migrations, configuration changes, or breaking changes are called out.
+
+Recommended validation:
+
+```bash
+docker compose run --rm app npm test
+docker compose run --rm app npm run build
+```
+
+If you cannot run a command locally, mention that in the pull request.
+
+## Versioning and Releases
+
+FeedForge uses Semantic Versioning:
+
+```txt
+MAJOR.MINOR.PATCH
+```
+
+General guidance:
+
+* PATCH for bug fixes, documentation corrections, and small internal improvements.
+* MINOR for new features and meaningful user-facing additions.
+* MAJOR for breaking configuration, API, database, or architecture changes.
+
+Release tags use this format:
+
+```txt
+vMAJOR.MINOR.PATCH
+```
+
+Release preparation usually includes passing tests, building the app, validating the Docker Compose workflow, updating documentation when needed, and publishing release notes.
+
+## Code of Conduct
+
+Please be respectful, specific, and collaborative. Assume good intent, discuss tradeoffs directly, and keep feedback focused on the work.
+
+Maintainers may close issues or pull requests that are out of scope, inactive, duplicated, or not actionable, but forks and alternative experiments are welcome.
