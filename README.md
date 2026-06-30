@@ -1,6 +1,25 @@
+<div align="center">
+
+<img src="./.github/assets/logo.svg" alt="FeedForge logo" width="120" />
+
 # FeedForge
 
-FeedForge is a local-first editorial radar for open source and technology news. It collects Portuguese and English news from configured RSS/Atom and HTML sources, classifies each item with deterministic scoring, and helps technical writers save promising items for future posts.
+**A local-first editorial radar that ranks open source &amp; tech news with transparent, deterministic scoring — no LLMs, no noise.**
+
+[![Version](https://img.shields.io/badge/version-1.1.1-f97316?style=flat-square)](https://github.com/kristyancarvalho/feedforge/releases)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
+[![Fastify](https://img.shields.io/badge/Fastify-5-000000?style=flat-square&logo=fastify&logoColor=white)](https://fastify.dev)
+[![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?style=flat-square&logo=prisma&logoColor=white)](https://www.prisma.io)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![Tested with Vitest](https://img.shields.io/badge/tested%20with-Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev)
+
+</div>
+
+<p align="center">
+  <img src="./.github/assets/demo.png" alt="FeedForge radar dashboard" width="900" />
+</p>
 
 ## What FeedForge Is
 
